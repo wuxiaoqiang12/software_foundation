@@ -376,13 +376,35 @@ Qed.
     [bexp] 的值。请编写一个对 [bexp] 执行此变换的函数，并证明它的可靠性。
     利用我们刚学过的泛策略来构造一个尽可能优雅的证明。 *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue       => BTrue
+  | BFalse      => BFalse
+  | BEq a1 a2   => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2   => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BNot e      => BNot (optimize_0plus_b e)
+  | BAnd e1 e2  => BAnd (optimize_0plus_b e1) (optimize_0plus_b e2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* 请在此处解答 *) Admitted.
+(*  intro e. induction e.
+  - reflexivity.
+  - reflexivity.
+  - simpl. rewrite -> optimize_0plus_sound. rewrite -> optimize_0plus_sound. reflexivity.
+  - simpl. rewrite -> optimize_0plus_sound. rewrite -> optimize_0plus_sound. reflexivity.
+  - simpl. rewrite IHe. reflexivity.
+  - simpl. rewrite -> IHe1. rewrite -> IHe2. reflexivity.*)
+
+  intros e.
+  induction e;
+    try reflexivity;
+    try (simpl; rewrite 2 optimize_0plus_sound; reflexivity).
+    simpl. rewrite IHe. reflexivity.
+    simpl. rewrite IHe1. rewrite IHe2. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：4 星, standard, optional (optimize)  
@@ -632,6 +654,26 @@ Inductive aevalR : aexp -> nat -> Prop :=
 
     请用推理规则记法将布尔求值的定义写成关系的形式。 *)
 (* 请在此处解答 *)
+Inductive bevalR: bexp -> bool -> Prop :=
+| E_BTrue :
+    bevalR (BTrue) true
+| E_BFalse :
+    bevalR (BFalse) false
+| E_BEq (a1 a2 : aexp) (n1 n2 : nat) :
+    aevalR a1 n1 ->
+    aevalR a2 n2 ->
+    bevalR (BEq a1 a2) (n1 =? n2)
+| E_BLe (a1 a2 : aexp) (n1 n2 : nat) :
+    aevalR a1 n1 ->
+    aevalR a2 n2 ->
+    bevalR (BLe a1 a2) (n1 <=? n2)
+| E_BNot (e1 : bexp) (b : bool) :
+    bevalR e1 b ->
+    bevalR (BNot e1) (negb b)
+| E_BAnd (e1 e2 : bexp) (b1 b2 : bool):
+    bevalR e1 b1 ->
+    bevalR e2 b2 ->
+    bevalR (BAnd e1 e2) (andb b1 b2).
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_beval_rules : option (nat*string) := None.
@@ -696,14 +738,31 @@ Qed.
 
     用和 [aevalR] 同样的方式写出关系 [bevalR]，并证明它等价于 [beval]。 *)
 
-Inductive bevalR: bexp -> bool -> Prop :=
-(* 请在此处解答 *)
-.
+(*Inductive bevalR: bexp -> bool -> Prop :=
+  | E_BTrue:
+      bevalR (BTrue) true
+  | E_BFalse:
+      bevalR (BFalse) false
+  | E_BEq : forall (e1 e2: aexp) (n1 n2 : nat),
+      aevalR e1 n1 -> aevalR e2 n2 -> bevalR (BEq e1 e2) (n1 =? n2)
+  | E_BLe : forall (e1 e2 : aexp) (n1 n2 : nat),
+      aevalR e1 n1 -> aevalR e2 n2 -> bevalR (BLe e1 e2) (n1 <=? n2)
+  | E_BNot : forall (e1 : bexp) (b : bool),
+      bevalR e1 b -> bevalR (BNot e1) (negb b)
+  | E_BAnd : forall (e1 e2 : bexp) (b1 b2 : bool),
+      bevalR e1 b1 -> bevalR e2 b2 -> bevalR (BAnd e1 e2) (andb b1 b2).*)
 
 Lemma beval_iff_bevalR : forall b bv,
   bevalR b bv <-> beval b = bv.
 Proof.
-  (* 请在此处解答 *) Admitted.
+(*  split.
+  intros H. induction H; try (simpl; reflexivity).
+  try(simpl; apply aeval_iff_aevalR in H; apply aeval_iff_aevalR in H0; subst; reflexivity).
+  try(simpl; rewrite IHbevalR; reflexivity).
+  try(simpl; rewrite IHbevalR1; rewrite IHbevalR2; reflexivity).*)
+
+Admitted.
+
 (** [] *)
 
 End AExp.
@@ -1298,7 +1357,19 @@ Example ceval_example2:
     X ::= 0;; Y ::= 1;; Z ::= 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* 请在此处解答 *) Admitted.
+(*  apply E_Seq with (X !-> 0).
+  - apply E_Ass. reflexivity.
+  - apply E_Seq with (Y !-> 1; X !-> 0).
+    + apply E_Ass. reflexivity.
+    + apply E_Ass. reflexivity.
+Qed.*)
+    
+  apply E_Seq with (X !-> 0);
+    try (apply E_Ass; reflexivity).
+  apply E_Seq with (Y !-> 1; X !-> 0);
+  try (apply E_Ass; reflexivity).
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard, optional (pup_to_n)  
@@ -1306,15 +1377,31 @@ Proof.
     写一个 Imp 程序对从 [1] 到 [X] 进行求值（包括：将 [1 + 2 + ... + X]) 赋予变量 [Y]。
    证明此程序对于 [X] = [2] 会按预期执行（这可能比你预想的还要棘手）。 *)
 
-Definition pup_to_n : com
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Definition pup_to_n : com :=
+  (Y ::= 0;;
+   WHILE ~(X = 0) DO
+   Y ::= Y + X;;
+   X ::= X - 1
+   END)%imp.
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold pup_to_n. apply E_Seq with (Y !-> 0; X !-> 2).
+  apply E_Ass. reflexivity.
+  apply E_WhileTrue with (X !-> 1; Y!-> 2; Y !-> 0; X !-> 2).
+  - simpl. reflexivity.
+  - apply E_Seq with (Y!-> 2; Y !-> 0; X !-> 2);
+    try (apply E_Ass; reflexivity).
+  - apply E_WhileTrue with (X !-> 0; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
+    + reflexivity.
+    + apply E_Seq with (Y !-> 3; X !-> 1; Y !-> 2; Y !-> 0; X !-> 2);
+        try(apply E_Ass; reflexivity).
+    + apply E_WhileFalse. reflexivity.
+Qed.
+    
 (** [] *)
 
 (* ================================================================= *)
@@ -1383,10 +1470,19 @@ Proof.
 
   inversion Heval. subst. clear Heval. simpl.
   apply t_update_eq.  Qed.
-
+Print t_update_eq.
 (** **** 练习：3 星, standard, recommended (XtimesYinZ_spec)  
 
     叙述并证明 [XtimesYinZ] 的规范（Specification）。 *)
+Theorem XtimesYinZ_spec : forall st n st',
+  st X = n ->
+  st =[ XtimesYinZ ]=> st' ->
+                      st' X = n.
+Proof.
+  intros. generalize dependent n.
+  inversion H0; subst.
+  simpl. intros. assumption.
+Qed.
 
 (* 请在此处解答 *)
 
@@ -1404,8 +1500,14 @@ Proof.
 
   (** 归纳讨论假设“[loopdef] 会终止”之构造，其中多数情形的矛盾显而易见，
       可用 [discriminate] 一步解决。 *)
-
-  (* 请在此处解答 *) Admitted.
+  (*induction contra; try(discriminate).*)
+  inversion contra; subst;
+    try (discriminate).
+  - rewrite <- H0 in contra.
+    inversion H0. rewrite -> H2 in H. inversion H.
+  - rewrite <- H2 in contra.
+    Admitted.
+      
 (** [] *)
 
 (** **** 练习：3 星, standard (no_whiles_eqv)  
@@ -1507,33 +1609,54 @@ Inductive sinstr : Type :=
 
 Fixpoint s_execute (st : state) (stack : list nat)
                    (prog : list sinstr)
-                 : list nat
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+  : list nat :=
+  match prog with
+  | nil => stack
+  | ins :: inss => match ins, stack with
+                 | SPush n, _ => s_execute st (n :: stack) inss
+                 | SLoad x, _ => s_execute st (st x :: stack) inss
+                 | SPlus, (a :: (b :: c)) => s_execute st ((a + b) :: c) inss
+                 | SMinus, (a :: (b :: c)) => s_execute st ((b - a) :: c) inss
+                 | SMult, (a :: (b :: c))  => s_execute st ((a * b) :: c) inss
+                 | _, _ => stack
+                 end
+  end.
 
 Example s_execute1 :
      s_execute empty_st []
        [SPush 5; SPush 3; SPush 1; SMinus]
-   = [2; 5].
-(* 请在此处解答 *) Admitted.
+     = [2; 5].
+Proof.
+  simpl. reflexivity. Qed. 
+  
 
 Example s_execute2 :
      s_execute (X !-> 3) [3;4]
        [SPush 4; SLoad X; SMult; SPlus]
    = [15; 4].
-(* 请在此处解答 *) Admitted.
+Proof.
+  simpl. reflexivity. Qed.
 
 (** 接下来请编写一个将 [aexp] 编译成栈机器程序的函数。运行此程序的效果
     应当和将该表达式的值压入栈中一致。 *)
 
-Fixpoint s_compile (e : aexp) : list sinstr
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Fixpoint s_compile (e : aexp) : list sinstr :=
+  match e with
+  | ANum n => [SPush n]
+  | AId i => [SLoad i]
+  | APlus n m => s_compile n ++ s_compile m ++ [SPlus]
+  | AMinus n m => s_compile n ++ s_compile m ++ [SMinus]
+  | AMult n m => s_compile n ++ s_compile m ++ [SMult]
+  end.
+
 
 (** 在定义完 [s_compile] 之后，请证明以下示例来测试它是否起作用。 *)
 
 Example s_compile1 :
   s_compile (X - (2 * Y))%imp
   = [SLoad X; SPush 2; SLoad Y; SMult; SMinus].
-(* 请在此处解答 *) Admitted.
+Proof.
+  simpl. reflexivity. Qed.
 (** [] *)
 
 (** **** 练习：4 星, advanced (stack_compiler_correct)  
@@ -1547,9 +1670,8 @@ Example s_compile1 :
 
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
-Proof.
-  (* 请在此处解答 *) Admitted.
-(** [] *)
+Admitted.
+  (** [] *)
 
 (** **** 练习：3 星, standard, optional (short_circuit)  
 
@@ -1563,8 +1685,18 @@ Proof.
     在更大的语言中该表达式可能会发散，此时短路求值的 [BAnd] _'并不'_
     等价于原始版本，因为它能让更多程序终止。） *)
 
-(* 请在此处解答 
 
+
+(* 请在此处解答 
+Fixpoint beval (b : bexp) : bool :=
+  match b with
+  | BTrue       => true
+  | BFalse      => false
+  | BEq a1 a2   => (aeval a1) =? (aeval a2)
+  | BLe a1 a2   => (aeval a1) <=? (aeval a2)
+  | BNot b1     => negb (beval b1)
+  | BAnd b1 b2  => if (beval b1) then andb (beval b1) (beval b2) else false
+  end.
     [] *)
 
 Module BreakImp.
@@ -1654,9 +1786,24 @@ Reserved Notation "st '=[' c ']=>' st' '/' s"
 (** 基于以上描述，请完成 [ceval] 关系的定义。 *)
 
 Inductive ceval : com -> state -> result -> state -> Prop :=
-  | E_Skip : forall st,
+(*  | E_Skip : forall st,
       st =[ CSkip ]=> st / SContinue
-  (* 请在此处解答 *)
+  | E_Break : forall st,
+      st =[ CBreak ]=> st / SBreak
+  | E_Ass : forall st a1 n x,
+      aeval st a1 = n ->
+      st =[ x ::= a1 ]=> (x !-> n; st) / SContinue
+  | E_Seq : forall c1 c2 st st' st'',
+      st =[ c1 ]=> st' ->
+      st' =[ c2 ]=> st'' ->
+      st =[ c1 ;; c2 ]=> st'' / SContinue
+  | E_IfTrue
+  | E_IfFalse
+  | E_WhileTrue
+  | E_WhileFalse*)
+  
+  
+  
 
   where "st '=[' c ']=>' st' '/' s" := (ceval c st s st').
 

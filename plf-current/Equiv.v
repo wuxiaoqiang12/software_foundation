@@ -111,7 +111,15 @@ Theorem skip_right : forall c,
     (c ;; SKIP)
     c.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros c st st'.
+  split; intros H.
+  - inversion H. inversion H5. subst.
+    apply H2.
+  - apply E_Seq with st'.
+    apply H.
+    apply E_Skip.
+Qed.
+
 (** [] *)
 
 (** 同样，下面是一个优化 [TEST] 的简单程序变换： *)
@@ -131,10 +139,10 @@ Proof.
 (** 当然，人类程序员是不会写把断言（guard）直接写成 [true] 的条件分支的。
     不过当断言_'等价于真'_的情况时就会写出来： 
 
-    _'定理'_：若 [b] 等价于 [BTrue]，则 [TEST b THEN c1 ELSE c2 FI] 等价于 [c1]。 
+    _'定理'_：若 [b] 等价于 [BTrue]，则 [TES•(setq-default cursor-type 'bar)•••••••T b THEN c1 ELSE c2 FI] 等价于 [c1]。 
    _'证明'_：
 
-     - ([->]) 我们必须证明，对于所有的 [st] 和 [st']，若 [st =[
+    (setq evil-emacs-state-cursor '("chartreuse3" (bar . 2))) - ([->]) 我们必须证明(setq-default cursor-type 'bar)，对于所有的 [st] 和 [st']，若 [st =[
        TEST b THEN c1 ELSE c2 FI ]=> st'] 则 [st =[ c1 ]=> st']。
 
        能够应用于 [st =[ TEST b THEN c1 ELSE c2 FI ]=> st'] 的证明规则只有两条：
@@ -149,11 +157,12 @@ Proof.
 
          之前提到 [b] 等价于 [BTrue], 即对于所有 [st]，有 [beval st b = beval st
          BTrue]。具体来说就是 [beval st b = true] 成立，因而 [beval st BTrue =
-         true] 成立。然而，之前假设 [E_IfFalse] 必备的前提条件 [beval st b = false]
+        company-coq true] 成立。然而，之前假设 [E_IfFalse] 必备的前提条件 [beval st b = false]
          也成立，这就构成了一组矛盾，因此不可能使用了 [E_IfFalse] 这条证明规则。
 
      - ([<-]) 我们必须证明，对于所有 [st] 和 [st']，若[st =[ c1 ]=> st']
-       则 [IFB b THEN c1 ELSE c2 FI / st \\ st']。
+       则 [IFB b THEN c1 ELSE c2 FI / st \\(setq custom-file (expand-file-name "custom.el" dotspacemacs-directory))
+(load custom-file 'no-error 'no-message) st']。
 
        已知 [b] 等价于 [BTrue]，我们知道 [beval st b] = [beval st BTrue] = [true]。
        结合 [st =[ c1 ]=> st'] 这条假设，我们能应用 [E_IfTrue] 来证明
@@ -189,7 +198,16 @@ Theorem TEST_false : forall b c1 c2,
     (TEST b THEN c1 ELSE c2 FI)
     c2.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros b c1 c2 Hb.
+  split; intros H.
+  - unfold bequiv in Hb. simpl in Hb.
+    inversion H; subst. rewrite Hb in H5. inversion H5.
+    assumption.
+  - apply E_IfFalse; try assumption.
+    unfold bequiv in Hb. simpl in Hb.
+    rewrite Hb. reflexivity.
+Qed.
+  
 (** [] *)
 
 (** **** 练习：3 星, standard (swap_if_branches)  
@@ -201,7 +219,19 @@ Theorem swap_if_branches : forall b e1 e2,
     (TEST b THEN e1 ELSE e2 FI)
     (TEST BNot b THEN e2 ELSE e1 FI).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros b e1 e2 st st'. split; intros H.
+  inversion H; subst.
+  - apply E_IfFalse. simpl. rewrite -> H5. reflexivity.
+    assumption.
+  - apply E_IfTrue. simpl. rewrite -> H5. reflexivity.
+    assumption.
+  - inversion H; subst.
+    + apply E_IfFalse. simpl. simpl in H5. apply negb_true_iff in H5. assumption.
+      assumption.
+    + apply E_IfTrue. simpl. simpl in H5. apply negb_false_iff in H5. assumption.
+      assumption.
+Qed.
+
 (** [] *)
 
 (** 对于 [WHILE] 循环，我们能够给出一组相似的定理：当循环的断言等价于 [BFalse]
@@ -295,7 +325,17 @@ Theorem WHILE_true : forall b c,
     (WHILE b DO c END)
     (WHILE true DO SKIP END).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros b c Hb st st'. split. intros H.
+  inversion H; subst.
+  rewrite Hb in H4. inversion H4.
+  apply WHILE_true_nonterm in H6. inversion H6.
+  apply Hb.
+  intros H. inversion H; subst.
+  inversion H4; subst.
+  apply WHILE_true_nonterm in H6. inversion H6.
+  unfold bequiv. intros. reflexivity.
+Qed.
+
 (** [] *)
 
 (** 关于 [WHILE] 指令的更有趣的事实是，任何数量的循环体的副本在不改变意义
@@ -329,7 +369,20 @@ Proof.
 Theorem seq_assoc : forall c1 c2 c3,
   cequiv ((c1;;c2);;c3) (c1;;(c2;;c3)).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros c1 c2 c3 st st'. split; intros H; inversion H; subst.
+  - inversion H2; subst.
+    apply E_Seq with (st' := st'1).
+    assumption.
+    apply E_Seq with (st' := st'0).
+    assumption. assumption.
+  - inversion H5; subst.
+    apply E_Seq with (st' := st'1).
+    apply E_Seq with (st' := st'0).
+    assumption.
+    assumption.
+    assumption.
+Qed.
+    
 (** [] *)
 
 (** 证明涉及赋值的程序的属性经常会用到这一事实，即程序状态会根据其外延性
@@ -357,8 +410,14 @@ Theorem assign_aequiv : forall (x : string) e,
   aequiv x e ->
   cequiv SKIP (x ::= e).
 Proof.
-  (* 请在此处解答 *) Admitted.
-(** [] *)
+Admitted.
+  (*intros x e He st st'.
+  split; intros H; inversion H; subst.
+  - assert (Hx : st' =[ x ::= x ]=> (x !-> st' x ; st')).
+    { apply E_Ass. reflexivity. }
+    rewrite t_update_same in Hx.
+    unfold  aequiv in He. *)
+    (** [] *)
 
 (** **** 练习：2 星, standard (equiv_classes)  *)
 
@@ -418,8 +477,14 @@ Definition prog_i : com :=
     X ::= Y + 1
   END)%imp.
 
-Definition equiv_classes : list (list com)
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Definition equiv_classes : list (list com) :=
+   [[prog_a ; prog_g ] ;
+    [prog_c ; prog_h] ;
+    [prog_i] ;
+    [prog_f] ;
+    [prog_e] ;
+    [prog_b]
+  ].
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_equiv_classes : option (nat*string) := None.
@@ -604,7 +669,18 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv (c1;;c2) (c1';;c2').
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold cequiv. intros c1 c1' c2 c2' Hc1e Hc2e st st'.
+  split; intros Hc1c2e.
+  - inversion Hc1c2e; subst.
+    apply E_Seq with (st' := st'0).
+    + rewrite <- (Hc1e st st'0). apply H1.
+    + rewrite <- (Hc2e st'0 st'). apply H4.
+  - inversion Hc1c2e; subst.
+    apply E_Seq with (st' := st'0).
+    + rewrite -> (Hc1e st st'0). apply H1.
+    + rewrite -> (Hc2e st'0 st'). apply H4.
+Qed.
+      
 (** [] *)
 
 (** **** 练习：3 星, standard (CIf_congruence)  *)
@@ -613,7 +689,21 @@ Theorem CIf_congruence : forall b b' c1 c1' c2 c2',
   cequiv (TEST b THEN c1 ELSE c2 FI)
          (TEST b' THEN c1' ELSE c2' FI).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold bequiv, cequiv.
+  intros b b' c1 c1' c2 c2' Hbe Hc1e Hc2e st st'.
+  split; intros Hbce.
+  - inversion Hbce; subst.
+    + apply E_IfTrue. rewrite <- Hbe. apply H4.
+      apply (Hc1e st st'). apply H5.
+    + apply E_IfFalse. rewrite <- Hbe. apply H4.
+      apply (Hc2e st st'). apply H5.
+  - inversion Hbce; subst.
+    + apply E_IfTrue. rewrite -> Hbe. apply H4.
+      apply (Hc1e st st'). apply H5.
+    + apply E_IfFalse. rewrite -> Hbe. apply H4.
+      apply (Hc2e st st'). apply H5.
+Qed.
+    
 (** [] *)
 
 (** 例如，下面是两个等价的程序和它们等价关系的证明... *)
@@ -958,7 +1048,15 @@ Proof.
     (* 唯一有趣的是 a1 和 a2 在折叠后同时变为常量 *)
       simpl. destruct (n =? n0); reflexivity.
   - (* BLe *)
-    (* 请在此处解答 *) admit.
+    simpl.
+    remember (fold_constants_aexp a1) as a1' eqn:Heqa1'.
+    remember (fold_constants_aexp a2) as a2' eqn:Heqa2'.
+    replace (aeval st a1) with (aeval st a1') by
+        (subst a1'; rewrite <- fold_constants_aexp_sound; reflexivity).
+    replace (aeval st a2) with (aeval st a2') by
+        (subst a2'; rewrite <- fold_constants_aexp_sound; reflexivity).
+    destruct a1'; destruct a2'; try reflexivity.
+    simpl. destruct (n <=? n0); reflexivity.
   - (* BNot *)
     simpl. remember (fold_constants_bexp b) as b' eqn:Heqb'.
     rewrite IHb.
@@ -969,7 +1067,8 @@ Proof.
     remember (fold_constants_bexp b2) as b2' eqn:Heqb2'.
     rewrite IHb1. rewrite IHb2.
     destruct b1'; destruct b2'; reflexivity.
-(* 请在此处解答 *) Admitted.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (fold_constants_com_sound)  
@@ -999,7 +1098,14 @@ Proof.
       apply trans_cequiv with c2; try assumption.
       apply TEST_false; assumption.
   - (* WHILE *)
-    (* 请在此处解答 *) Admitted.
+    remember (fold_constants_bexp b) as b'.
+    assert (bequiv b b'). {
+      rewrite Heqb'. apply fold_constants_bexp_sound. }
+    destruct b'; try (apply CWhile_congruence; assumption; assumption).
+    apply WHILE_true. assumption.
+    apply WHILE_false. assumption.
+Qed.
+
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -1040,6 +1146,105 @@ Proof.
    - 请为此优化器写一个有意义的测试用例。
 
    - 证明此优化程序有可靠性。（这部分应该会_'很简单'_ 。）  *)
+
+Fixpoint optimize_0plus_aexp (a : aexp) : aexp :=
+  match a with
+  | ANum n =>
+    ANum n
+  | AId i =>
+    AId i
+  | APlus (ANum 0) a2 =>
+    optimize_0plus_aexp a2
+  | APlus a1 a2 =>
+    APlus (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | AMinus a1 a2 =>
+    AMinus (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | AMult a1 a2 =>
+    AMult (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  end.
+
+Fixpoint optimize_0plus_bexp (b : bexp) : bexp :=
+  match b with
+  | BTrue =>
+    BTrue
+  | BFalse =>
+    BFalse
+  | BEq a1 a2 =>
+    BEq (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | BLe a1 a2 =>
+    BLe (optimize_0plus_aexp a1) (optimize_0plus_aexp a2)
+  | BNot e =>
+    BNot (optimize_0plus_bexp e)
+  | BAnd b1 b2 =>
+    BAnd (optimize_0plus_bexp b1) (optimize_0plus_bexp b2)
+  end.
+
+Fixpoint optimize_0plus_com (c : com) : com :=
+  match c with
+  | CSkip =>
+    CSkip
+  | CAss x a =>
+    CAss x (optimize_0plus_aexp a)
+  | CSeq c1 c2 =>
+    CSeq (optimize_0plus_com c1) (optimize_0plus_com c2)
+  | CIf b c1 c2 =>
+    CIf (optimize_0plus_bexp b) (optimize_0plus_com c1) (optimize_0plus_com c2)
+  | CWhile b c =>
+    CWhile (optimize_0plus_bexp b) (optimize_0plus_com c)
+  end.
+
+Theorem optimize_0plus_aexp_sound:
+  atrans_sound optimize_0plus_aexp.
+Proof.
+  unfold atrans_sound. intros a. unfold aequiv. intros st.
+  induction a; simpl;
+    try reflexivity;
+    try (destruct (optimize_0plus_aexp a1);
+         destruct (optimize_0plus_aexp a2);
+         rewrite IHa1; rewrite IHa2; reflexivity).
+Admitted.
+
+Theorem optimize_0plus_bexp_sound :
+  btrans_sound optimize_0plus_bexp.
+Proof.
+  unfold btrans_sound. intros b. unfold bequiv. intros st.
+  induction b; simpl;
+    try reflexivity.
+  rewrite <-2 optimize_0plus_aexp_sound; reflexivity.
+  rewrite <-2 optimize_0plus_aexp_sound; reflexivity.
+  rewrite IHb. reflexivity.
+  rewrite IHb1. rewrite IHb2. reflexivity.
+Qed.
+
+Theorem optimize_0plus_com_sound :
+  ctrans_sound optimize_0plus_com.
+Proof.
+  unfold ctrans_sound. intros c.
+  induction c; simpl.
+  - apply refl_cequiv.
+  - apply CAss_congruence. apply optimize_0plus_aexp_sound.
+  - apply CSeq_congruence. assumption. assumption.
+  - apply CIf_congruence. apply optimize_0plus_bexp_sound.
+    assumption. assumption.
+  - apply CWhile_congruence. apply optimize_0plus_bexp_sound.
+    assumption.
+Qed.
+
+Definition optimize_both_com (c : com) : com :=
+  optimize_0plus_com (fold_constants_com c).
+
+Theorem optimize_both_com_sound :
+  ctrans_sound optimize_both_com.
+Proof.
+  unfold ctrans_sound. intros c.
+  unfold optimize_both_com.
+  remember (fold_constants_com c) as c'.
+  apply trans_cequiv with c'.
+  rewrite Heqc'. apply fold_constants_com_sound.
+  apply trans_cequiv with c'.
+  apply refl_cequiv.
+  apply optimize_0plus_com_sound.
+Qed.
 
 (* 请在此处解答 
 
@@ -1145,7 +1350,8 @@ Proof.
       as c1.
   remember (X ::= X + 1;;
             Y ::= X + 1)%imp
-      as c2.
+    as c2.
+(*  assert (cequiv c1 c2). { subst. apply Contra. }*)
   assert (cequiv c1 c2) by (subst; apply Contra).
 
   (* ...我们来证明 [c2] 能够在两个不同的状态下停机：
@@ -1188,11 +1394,24 @@ Inductive var_not_used_in_aexp (x : string) : aexp -> Prop :=
       var_not_used_in_aexp x a2 ->
       var_not_used_in_aexp x (AMult a1 a2).
 
+(*Lemma ident :
+  forall X : Type, forall a b : X, (a = b) /\ (a <> b) -> False.
+Proof.
+  intros X a b [Ha Hb].
+  unfold not in Hb. apply Hb in Ha. apply Ha.
+Qed.*)
+
+(*Lemma ident :
+  forall P Q : Prop, P \/ Q -> ~~(P \/ Q).
+Proof.
+  intros P Q H. unfold not. intros G. apply G in H. apply H. Qed.
+ *)
+
 Lemma aeval_weakening : forall x st a ni,
   var_not_used_in_aexp x a ->
   aeval (x !-> ni ; st) a = aeval st a.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. Admitted.
 
 (** 使用 [var_not_used_in_aexp]，形式化并证明正确版本的 [subst_equiv_property]。 *)
 
@@ -1303,8 +1522,9 @@ Inductive ceval : com -> state -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* 请在此处解答 *)
-
+  | E_Havoc : forall st st' x,
+      st  =[ HAVOC x ]=> st'
+  
   where "st =[ c ]=> st'" := (ceval c st st').
 Close Scope imp_scope.
 
@@ -1312,12 +1532,14 @@ Close Scope imp_scope.
 
 Example havoc_example1 : empty_st =[ (HAVOC X)%imp ]=> (X !-> 0).
 Proof.
-(* 请在此处解答 *) Admitted.
+  apply E_Havoc.Qed.
 
 Example havoc_example2 :
   empty_st =[ (SKIP;; HAVOC Z)%imp ]=> (Z !-> 42).
 Proof.
-(* 请在此处解答 *) Admitted.
+  apply E_Seq with (st' := empty_st).
+  constructor. constructor.
+Qed.
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_Check_rule_for_HAVOC : option (nat*string) := None.
@@ -1344,7 +1566,16 @@ Definition pYX :=
 
 Theorem pXY_cequiv_pYX :
   cequiv pXY pYX \/ ~cequiv pXY pYX.
-Proof. (* 请在此处解答 *) Admitted.
+Proof.
+  unfold cequiv. unfold pXY. unfold pYX.
+  left.
+  split; intros.
+  inversion H; subst. inversion H5; subst. apply E_Seq with st'0.
+  apply E_Havoc. apply E_Havoc.
+  inversion H; subst. apply E_Seq with st'0.
+  apply E_Havoc. apply E_Havoc.
+Qed.
+
 (** [] *)
 
 (** **** 练习：4 星, standard, optional (havoc_copy)  
@@ -1361,7 +1592,11 @@ Definition pcopy :=
 
 Theorem ptwice_cequiv_pcopy :
   cequiv ptwice pcopy \/ ~cequiv ptwice pcopy.
-Proof. (* 请在此处解答 *) Admitted.
+Proof.
+  right. unfold not. intros.
+  unfold cequiv in H.
+  Admitted.
+  
 (** [] *)
 
 (** 我们在这里使用的程序等价关系的定义对无限循环的程序来说有点复杂。因为
@@ -1391,7 +1626,9 @@ Definition p2 : com :=
 
 Lemma p1_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p1 ]=> st'.
-Proof. (* 请在此处解答 *) Admitted.
+Proof.
+  unfold p1. unfold not. intros. inversion H0; subst.
+  simpl in H5. apply H. Admitted.
 
 Lemma p2_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p2 ]=> st'.

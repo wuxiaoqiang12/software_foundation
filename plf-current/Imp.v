@@ -376,13 +376,35 @@ Qed.
     [bexp] 的值。请编写一个对 [bexp] 执行此变换的函数，并证明它的可靠性。
     利用我们刚学过的泛策略来构造一个尽可能优雅的证明。 *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue       => BTrue
+  | BFalse      => BFalse
+  | BEq a1 a2   => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2   => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BNot e      => BNot (optimize_0plus_b e)
+  | BAnd e1 e2  => BAnd (optimize_0plus_b e1) (optimize_0plus_b e2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* 请在此处解答 *) Admitted.
+(*  intro e. induction e.
+  - reflexivity.
+  - reflexivity.
+  - simpl. rewrite -> optimize_0plus_sound. rewrite -> optimize_0plus_sound. reflexivity.
+  - simpl. rewrite -> optimize_0plus_sound. rewrite -> optimize_0plus_sound. reflexivity.
+  - simpl. rewrite IHe. reflexivity.
+  - simpl. rewrite -> IHe1. rewrite -> IHe2. reflexivity.*)
+
+  intros e.
+  induction e;
+    try reflexivity;
+    try (simpl; rewrite 2 optimize_0plus_sound; reflexivity).
+    simpl. rewrite IHe. reflexivity.
+    simpl. rewrite IHe1. rewrite IHe2. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：4 星, standard, optional (optimize)  
@@ -697,13 +719,32 @@ Qed.
     用和 [aevalR] 同样的方式写出关系 [bevalR]，并证明它等价于 [beval]。 *)
 
 Inductive bevalR: bexp -> bool -> Prop :=
-(* 请在此处解答 *)
-.
+  | E_BTrue:
+      bevalR (BTrue) true
+  | E_BFalse:
+      bevalR (BFalse) false
+  | E_BEq : forall (e1 e2: aexp) (n1 n2 : nat),
+      aevalR e1 n1 -> aevalR e2 n2 -> bevalR (BEq e1 e2) (n1 =? n2)
+  | E_BLe : forall (e1 e2 : aexp) (n1 n2 : nat),
+      aevalR e1 n1 -> aevalR e2 n2 -> bevalR (BLe e1 e2) (n1 <=? n2)
+  | E_BNot : forall (e1 : bexp) (b : bool),
+      bevalR e1 b -> bevalR (BNot e1) (negb b)
+  | E_BAnd : forall (e1 e2 : bexp) (b1 b2 : bool),
+      bevalR e1 b1 -> bevalR e2 b2 -> bevalR (BAnd e1 e2) (andb b1 b2).
 
 Lemma beval_iff_bevalR : forall b bv,
   bevalR b bv <-> beval b = bv.
 Proof.
-  (* 请在此处解答 *) Admitted.
+(*  intros. split.
+  - induction b.
+    + intros. simpl. inversion H. reflexivity.
+    + intros. simpl. inversion H. reflexivity.
+    + intros. induction H.
+      * simpl. reflexivity.
+      * simpl. reflexivity.
+      * simpl. *)
+Admitted.
+      
 (** [] *)
 
 End AExp.
@@ -1718,4 +1759,4 @@ End BreakImp.
     [] *)
 
 
-(* Fri Mar 15 17:07:22 UTC 2019 *)
+(* Fri Mar 15 17:06:30 UTC 2019 *)

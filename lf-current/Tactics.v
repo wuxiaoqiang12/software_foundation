@@ -9,6 +9,7 @@
     - 还有通过分类讨论进行论证的更多细节。 *)
 
 Set Warnings "-notation-overridden,-parsing".
+From LF Require Export Induction.
 From LF Require Export Poly.
 
 (* ################################################################# *)
@@ -63,7 +64,10 @@ Theorem silly_ex :
      oddb 3 = true ->
      evenb 4 = true.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  apply H0.
+  Qed.
+
 (** [] *)
 
 (** 要使用 [apply] 策略，被应用的事实（的结论）必须精确地匹配证明目标：
@@ -91,7 +95,7 @@ Theorem rev_exercise1 : forall (l l' : list nat),
      l = rev l' ->
      l' = rev l.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. rewrite -> H. symmetry. apply rev_involutive. Qed.
 (** [] *)
 
 (** **** 练习：1 星, standard, optional (apply_rewrite)  
@@ -153,7 +157,10 @@ Example trans_eq_exercise : forall (n m o p : nat),
      (n + p) = m ->
      (n + p) = (minustwo o).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  apply trans_eq with (m:=minustwo o).
+  rewrite -> H0. rewrite -> H. reflexivity.
+  reflexivity. Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -245,7 +252,8 @@ Example injection_ex3 : forall (X : Type) (x y z : X) (l j : list X),
   y :: l = x :: j ->
   x = y.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  injection H0 as Hxy. symmetry. apply Hxy. Qed.
 (** [] *)
 
 (** So much for injectivity of constructors.  What about disjointness?
@@ -312,7 +320,8 @@ Example discriminate_ex3 :
     x :: y :: l = [] ->
     x = z.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  discriminate H. Qed.
 (** [] *)
 
 (** 构造子的单射性允许我们论证 [forall (n m : nat), S n = S m -> n = m]。
@@ -375,7 +384,18 @@ Theorem plus_n_n_injective : forall n m,
      n = m.
 Proof.
   intros n. induction n as [| n'].
-  (* 请在此处解答 *) Admitted.
+  { intros m H. destruct m as [| m'].
+    reflexivity.
+    inversion H. }
+  { intros m. destruct m as [| m'].
+    intros. inversion H.
+    intros eq. inversion eq.
+    rewrite <- plus_n_Sm in H0.
+    rewrite <- plus_n_Sm in H0.
+    inversion H0. apply IHn' in H1. rewrite -> H1. reflexivity.
+  }
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -517,14 +537,31 @@ Proof.
 Theorem eqb_true : forall n m,
     n =? m = true -> n = m.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros n. induction n as [|n'].
+  - intros m eq. destruct m as [|m'].
+    + reflexivity.
+    + simpl. discriminate eq.
+  - intros m eq. destruct m as [|m'].
+    + discriminate eq.
+    + simpl in eq. apply IHn' in eq. rewrite -> eq. reflexivity.
+Qed.
+      
 (** [] *)
 
 (** **** 练习：2 星, advanced (eqb_true_informal)  
 
     给出一个详细的 [eqb_true] 的非形式化证明，量词要尽可能明确。 *)
 
-(* 请在此处解答 *)
+(* 
+
+Theorem : forall n m : nat, if m =? n is true, then n = m.
+Proof. let m is a nat number. we proof thid theorem by induction n.
+  first. let n = 0, then m is a nat that make n =? m is true. we must prove m = 0.
+  this is simple and exiplict.
+
+  now, n = S n'. when m = 0,this is discriminate. when m = S m'.
+  we must prove S n' = S m', the pred is become (n'=?m') = true. simplify obtain n' = m'.then we use rewrite  and proved soon.
+ *)
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_informal_proof : option (nat*string) := None.
@@ -627,7 +664,11 @@ Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
      length l = n ->
      nth_error l n = None.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros n X l. induction l as [| t l'].
+  - intros H. simpl. reflexivity.
+  - intros H1. rewrite <- IHl'. simpl.
+    Abort.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -785,7 +826,7 @@ Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   split l = (l1, l2) ->
   combine l1 l2 = l.
 Proof.
-  (* 请在此处解答 *) Admitted.
+      (* 请在此处解答 *) Admitted.
 (** [] *)
 
 (** The [eqn:] part of the [destruct] tactic is optional: We've chosen
@@ -856,7 +897,12 @@ Theorem bool_fn_applied_thrice :
   forall (f : bool -> bool) (b : bool),
   f (f (f b)) = f b.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. destruct b eqn:beq.
+  destruct (f true) eqn:ft. rewrite ft. apply ft.
+  destruct (f false) eqn:ff. rewrite -> ft. reflexivity. apply ff.
+  destruct (f false) eqn:ff. destruct (f true) eqn:ft. apply ft. apply ff.
+  rewrite -> ff. apply ff.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -920,7 +966,12 @@ Proof.
 Theorem eqb_sym : forall (n m : nat),
   (n =? m) = (m =? n).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros n.
+  induction n as [|n'].
+  simpl. intros m. destruct m as [|m']. reflexivity. reflexivity.
+  simpl. intros m. destruct m as [|m']. reflexivity. simpl. apply IHn'.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, advanced, optional (eqb_sym_informal)  
@@ -940,7 +991,15 @@ Theorem eqb_trans : forall n m p,
   m =? p = true ->
   n =? p = true.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros n.
+  induction n as [|n'].
+  intros m. destruct m as [|m'].
+  simpl. destruct p as [|p']. reflexivity. discriminate.
+  simpl. destruct p as [|p']. discriminate. discriminate.
+  simpl. destruct m as [|m']. destruct p as [|p'].
+  discriminate. discriminate.
+  destruct p as [|p']. discriminate. simpl. apply IHn'.
+Qed.
 (** [] *)
 
 (** **** 练习：3 星, advanced (split_combine)  
@@ -975,7 +1034,10 @@ Theorem filter_exercise : forall (X : Type) (test : X -> bool)
      filter test l = x :: lf ->
      test x = true.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  simpl.
+Abort.  
+  
 (** [] *)
 
 (** **** 练习：4 星, advanced, recommended (forall_exists_challenge)  

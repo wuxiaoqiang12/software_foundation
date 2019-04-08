@@ -581,22 +581,19 @@ Proof.
   induction m as [|m'].
   reflexivity.
   reflexivity.
-  simpl. induction m as [|m'].
-  rewrite -> IHn'. simpl. Abort.
+  destruct m as [|m'].
+  simpl. rewrite -> IHn'. simpl. apply plus_assoc.
+  simpl. rewrite -> IHn'. simpl. apply plus_assoc.
+Qed.
   
 Theorem mult_assoc : forall n m p : nat,
   n * (m * p) = (n * m) * p.
 Proof.
-  intros.
-  induction n as [|n'].
-  induction m as [|m'].
-  reflexivity.
-  reflexivity.
-  simpl.
-  induction m as [|m'].
-  simpl. rewrite <- IHn'. reflexivity.
-  simpl. Abort.
-
+  intros. induction n as [|n'].
+  - reflexivity.
+  - simpl. rewrite -> mult_plus_distr_r. rewrite -> IHn'. reflexivity.
+Qed.
+      
 (** [] *)
 
 (** **** 练习：2 星, standard, optional (eqb_refl)  

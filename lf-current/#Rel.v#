@@ -280,8 +280,13 @@ Theorem le_step : forall n m p,
 Proof.
   intros.
   unfold lt in H.
-  apply le_Sn_le in H.
-  
+  assert(S n <= S p).
+  apply le_trans with m.
+  apply H. apply H0.
+  apply le_S_n.
+  apply H1.
+Qed.
+
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -384,7 +389,8 @@ Lemma rsc_trans :
       clos_refl_trans_1n R y z ->
       clos_refl_trans_1n R x z.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  Admitted.
+    
 (** [] *)
 
 (** 接着再用这些事实来证明这两个定义的自反性、

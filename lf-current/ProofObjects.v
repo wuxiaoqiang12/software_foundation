@@ -142,10 +142,13 @@ Print ev_4'''.
 
 Theorem ev_8 : even 8.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. apply ev_SS. apply ev_SS. apply ev_SS. apply ev_SS. apply ev_0.
+Qed.
 
-Definition ev_8' : even 8
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Definition ev_8' : even 8 :=
+  ev_SS 6 (ev_SS 4 (ev_SS 2 (ev_SS 0 ev_0))).
+Print ev_8.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -325,9 +328,23 @@ Definition and_comm' P Q : P /\ Q <-> Q /\ P :=
 (** **** 练习：2 星, standard, optional (conj_fact)  
 
     构造一个证明对象来证明下列命题。 *)
+Lemma conj_fact : forall P Q R, P /\ Q -> Q /\ R -> P /\ R.
+Proof.
+  intros. split.
+  - destruct H.
+    apply H.
+  - destruct H0.
+    apply H1.
+Qed.
+Print conj_fact.
+Definition conj_fact' : forall P Q R, P /\ Q -> Q /\ R -> P /\ R :=
+  fun (P Q R : Prop) (H : P /\ Q) (H0 : Q /\ R) =>
+    conj match H with
+         | conj H1 _ => H1
+           end match H0 with
+                     | conj _ H2 => H2
+               end.
 
-Definition conj_fact : forall P Q R, P /\ Q -> Q /\ R -> P /\ R
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
 (** [] *)
 
 (* ================================================================= *)
@@ -352,9 +369,19 @@ End Or.
 
     尝试写下[or_commut]的显式证明对象。（不要使用[Print]来偷看我们已经
     定义的版本！） *)
-
-Definition or_comm : forall P Q, P \/ Q -> Q \/ P
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Print or_comm.
+Definition or_comm : forall P Q, P \/ Q -> Q \/ P .
+Admitted.
+(*  fun P Q : Prop => conj (fun H : P \/ Q =>
+                      match H with
+                      | or_introl H0 => or_intror H0
+                      | or_intror H0 => or_introl H0
+                      end)
+                   (fun H : Q \/ P =>
+                      match H with
+                      | or_introl H0 => or_intror H0
+                      | or_intror H0 => or_introl H0
+                      end)*)
 (** [] *)
 
 (* ================================================================= *)
@@ -474,7 +501,9 @@ Definition singleton : forall (X:Type) (x:X), []++[x] == x::[]  :=
 Lemma equality__leibniz_equality : forall (X : Type) (x y: X),
   x == y -> forall P:X->Prop, P x -> P y.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. inversion H. rewrite <- H2. apply H0.
+Qed.
+
 (** [] *)
 
 (** **** 练习：5 星, standard, optional (leibniz_equality__equality)  
@@ -527,8 +556,7 @@ End MyEquality.
 
 (** _'例子'_：如果我们反演一个使用[eq]构造的前提，它也只有一个构造子，
     所以只产生一个子目标。但是，现在[eq_refl]构造子的形式给我们带来
-    的额外的信息：它告诉[eq]的两个参数必须是一样的。于是[inversion]策
-    略会将这个事实加入到上下文中。 *)
+    的额外的信息：它告诉[eq]的两个参数必须 *)
 
 
 (* Fri Mar 15 17:06:29 UTC 2019 *)

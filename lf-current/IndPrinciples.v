@@ -50,7 +50,11 @@ Proof.
 Theorem plus_one_r' : forall n:nat,
   n + 1 = S n.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  apply nat_ind.
+  - reflexivity.
+  - intros n H. simpl. rewrite -> H. reflexivity.
+Qed.
+
 (** [] *)
 
 (** Coq 为每一个 [Inductive] 定义的数据类型生成了归纳法则，包括那些非递归的。
@@ -89,6 +93,7 @@ Inductive rgb : Type :=
   | green
   | blue.
 Check rgb_ind.
+
 (** [] *)
 
 (** 下文例子中，有一个构造子调取多个参数。*)
@@ -113,7 +118,7 @@ Check natlist_ind.
 Inductive natlist1 : Type :=
   | nnil1
   | nsnoc1 (l : natlist1) (n : nat).
-
+Check natlist1_ind.
 (** 现在归纳法则会是什么呢？ 
 
     [] *)
@@ -139,6 +144,7 @@ Inductive byntree : Type :=
  | bempty
  | bleaf (yn : yesno)
  | nbranch (yn : yesno) (t1 t2 : byntree).
+Check byntree_ind.
 (** [] *)
 
 (** **** 练习：1 星, standard, optional (ex_set)  
@@ -154,8 +160,11 @@ Inductive byntree : Type :=
     请写出使用 [Inductive] 来定义的 [ExSet]： *)
 
 Inductive ExSet : Type :=
+| con1 (b : bool)
+| con2 (n : nat) (e : ExSet).
+Check ExSet_ind.
   (* 请在此处解答 *)
-.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -204,7 +213,13 @@ Check tree_ind.
             (forall m : mytype X, P m ->
                forall n : nat, P (constr3 X m n)) ->
             forall m : mytype X, P m
-*) 
+ *)
+Inductive mytype (X:Type) : Type :=
+| constr1 (x : X)
+| constr2 (n : nat)
+| constr3 (m : mytype X) (n : nat).
+Check mytype_ind.
+          
 (** [] *)
 
 (** **** 练习：1 星, standard, optional (foo)  
@@ -218,7 +233,12 @@ Check tree_ind.
              (forall f1 : nat -> foo X Y,
                (forall n : nat, P (f1 n)) -> P (quux X Y f1)) ->
              forall f2 : foo X Y, P f2
-*) 
+ *)
+Inductive foo (X Y : Type) : Type :=
+| bar (x : X)
+| baz (y : Y)
+| quux (f1 : nat -> foo X Y).
+Check foo_ind.
 (** [] *)
 
 (** **** 练习：1 星, standard, optional (foo')  
@@ -228,16 +248,16 @@ Check tree_ind.
 Inductive foo' (X:Type) : Type :=
   | C1 (l : list X) (f : foo' X)
   | C2.
-
+Check foo'_ind.
 (** Coq 会为 [foo'] 生成什么归纳法则？请填写下面的空白，并使用 Coq 检查你的答案。
 
      foo'_ind :
         forall (X : Type) (P : foo' X -> Prop),
               (forall (l : list X) (f : foo' X),
-                    _______________________ ->
-                    _______________________   ) ->
-             ___________________________________________ ->
-             forall f : foo' X, ________________________
+                    P f ->
+                    P (C1 X l f)   ) ->
+             P (C2 X) ->
+             forall f : foo' X, P f
 *)
 
 (** [] *)

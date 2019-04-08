@@ -181,7 +181,8 @@ Proof. reflexivity. Qed.
 Lemma t_apply_empty : forall (A : Type) (x : string) (v : A),
     (_ !-> v) x = v.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. trivial. Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, standard, optional (t_update_eq)  
@@ -193,7 +194,9 @@ Proof.
 Lemma t_update_eq : forall (A : Type) (m : total_map A) x v,
     (x !-> v ; m) x = v.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold t_update. rewrite <- eqb_string_refl. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, standard, optional (t_update_neq)  
@@ -206,7 +209,9 @@ Theorem t_update_neq : forall (A : Type) (m : total_map A) x1 x2 v,
     x1 <> x2 ->
     (x1 !-> v ; m) x2 = m x2.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold t_update. apply false_eqb_string in H. rewrite -> H. reflexivity.
+Qed.
+  
 (** [] *)
 
 (** **** 练习：2 星, standard, optional (t_update_shadow)  
@@ -218,7 +223,13 @@ Proof.
 Lemma t_update_shadow : forall (A : Type) (m : total_map A) x v1 v2,
     (x !-> v2 ; x !-> v1 ; m) = (x !-> v2 ; m).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  unfold t_update. extensionality x'.
+  induction (eqb_string x x').
+  - reflexivity.
+  - reflexivity.
+Qed.
+    
 (** [] *)
 
 (** 对于最后两个全映射的引理而言，用[IndProp]一章中引入的互映法
@@ -232,7 +243,18 @@ Proof.
 Lemma eqb_stringP : forall x y : string,
     reflect (x = y) (eqb_string x y).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. apply iff_reflect. rewrite eqb_string_true_iff. reflexivity.
+Qed.
+
+(*  intros. apply iff_reflect. split.
+  - intros. unfold eqb_string. destruct (string_dec x y).
+    + reflexivity.
+    + unfold not in n. destruct n. apply H.
+  - intros. unfold eqb_string in H. destruct (string_dec x y).
+    + apply e.
+    + unfold not in n. discriminate.
+Qed.*)
+
 (** [] *)
 
 (** 现在，给定 [string] 类型的字符串 [x1] 和 [x2]，我们可以在使用策略
@@ -249,7 +271,12 @@ Proof.
 Theorem t_update_same : forall (A : Type) (m : total_map A) x,
     (x !-> m x ; m) = m.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold t_update.
+  extensionality x'. destruct (eqb_stringP x x').
+  - rewrite e. reflexivity.
+  - reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard, recommended (t_update_permute)  
@@ -264,7 +291,16 @@ Theorem t_update_permute : forall (A : Type) (m : total_map A)
     =
     (x2 !-> v2 ; x1 !-> v1 ; m).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold t_update.
+  extensionality x'. destruct (eqb_stringP x1 x').
+  - destruct (eqb_stringP x2 x').
+    + exfalso. apply H. rewrite e. apply e0.
+    + reflexivity.
+  - destruct (eqb_stringP x2 x').
+    + reflexivity.
+    + reflexivity.
+Qed.
+  
 (** [] *)
 
 (* ################################################################# *)
@@ -341,4 +377,4 @@ Proof.
   apply t_update_permute.
 Qed.
 
-(* Fri Mar 15 17:07:22 UTC 2019 *)
+(* Fri Mar 15 17:06:29 UTC 2019 *)

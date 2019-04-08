@@ -136,7 +136,12 @@ Qed.
 Example and_exercise :
   forall n m : nat, n + m = 0 -> n = 0 /\ m = 0.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction n as [|n'].
+  split. reflexivity.
+  simpl in H. apply H.
+  inversion H.
+Qed.
+
 (** [] *)
 
 (** 以上就是证明合取语句的方法。要反过来使用，即_'使用'_合取前提来帮助证明时，
@@ -206,7 +211,11 @@ Proof.
 Lemma proj2 : forall P Q : Prop,
   P /\ Q -> Q.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  destruct H.
+  apply H0.
+Qed.
+
 (** [] *)
 
 (** 最后，我们有时需要重新排列合取语句的顺序，或者对多部分的合取语句进行分组。
@@ -230,7 +239,9 @@ Theorem and_assoc : forall P Q R : Prop,
   P /\ (Q /\ R) -> (P /\ Q) /\ R.
 Proof.
   intros P Q R [HP [HQ HR]].
-  (* 请在此处解答 *) Admitted.
+  split. split. apply HP. apply HQ. apply HR.
+Qed.
+
 (** [] *)
 
 (** 顺便一提，中缀记法 [/\] 只是 [and A B] 的语法糖而已；
@@ -289,14 +300,23 @@ Qed.
 Lemma mult_eq_0 :
   forall n m, n * m = 0 -> n = 0 \/ m = 0.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros [|n'].
+  left. reflexivity.
+  destruct m as [|m'].
+  right. reflexivity.
+  left. discriminate.
+Qed.
 (** [] *)
 
 (** **** 练习：1 星, standard (or_commut)  *)
 Theorem or_commut : forall P Q : Prop,
   P \/ Q  -> Q \/ P.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros P Q [HP| HQ].
+  right. apply HP.
+  left. apply HQ.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -346,7 +366,8 @@ Proof.
 Fact not_implies_our_not : forall (P:Prop),
   ~ P -> (forall (Q:Prop), P -> Q).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. destruct H. apply H0.
+Qed.
 (** [] *)
 
 (** 不等性是十分常见的否定句的例子，，它有一个特别的记法 [x <> y]：
@@ -407,14 +428,18 @@ Definition manual_grade_for_double_neg_inf : option (nat*string) := None.
 Theorem contrapositive : forall (P Q : Prop),
   (P -> Q) -> (~Q -> ~P).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros P Q H G. unfold not. unfold not in G. intros G0. apply H in G0.
+  apply G in G0. apply G0.
+Qed.
+  
 (** [] *)
 
 (** **** 练习：1 星, standard (not_both_true_and_false)  *)
 Theorem not_both_true_and_false : forall P : Prop,
   ~ (P /\ ~P).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold not. intros [HP HQ]. apply HQ. apply HP.
+Qed.
 (** [] *)
 
 (** **** 练习：1 星, advanced (informal_not_PNP)  
@@ -517,19 +542,31 @@ Qed.
 Theorem iff_refl : forall P : Prop,
   P <-> P.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split. intros HP. apply HP.
+  intros HP. apply HP. Qed.
 
 Theorem iff_trans : forall P Q R : Prop,
   (P <-> Q) -> (Q <-> R) -> (P <-> R).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros P Q R [HP HQ] [HQ' HP'].
+  split. intros H. apply HP in H. apply HQ' in H. apply H.
+  intros H. apply HP' in H. apply HQ in H. apply H.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (or_distributes_over_and)  *)
 Theorem or_distributes_over_and : forall P Q R : Prop,
   P \/ (Q /\ R) <-> (P \/ Q) /\ (P \/ R).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split.
+  intros [HP | [HQ HR]]. split. left. apply HP. left. apply HP.
+  split. right. apply HQ. right. apply HR.
+  intros [[HP | HQ] [HP' | HR]].
+  left. apply HP. left. apply HP. left. apply HP'. right.
+  split. apply HQ. apply HR.
+Qed.
+
 (** [] *)
 
 (** Coq 的某些策略会特殊对待 [iff] 语句，以此来避免操作某些底层的证明状态。
@@ -621,7 +658,8 @@ Proof.
 Theorem dist_not_exists : forall (X:Type) (P : X -> Prop),
   (forall x, P x) -> ~ (exists x, ~ P x).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold not. intros [x Hx]. apply Hx. apply H.
+Qed.
 (** [] *)
 
 (** **** 练习：2 星, standard (dist_exists_or)  
@@ -631,7 +669,15 @@ Proof.
 Theorem dist_exists_or : forall (X:Type) (P Q : X -> Prop),
   (exists x, P x \/ Q x) <-> (exists x, P x) \/ (exists x, Q x).
 Proof.
-   (* 请在此处解答 *) Admitted.
+  intros. split.
+  - intros [x [HP | HQ]].
+    left. exists x. apply HP.
+    right. exists x. apply HQ.
+  - intros [[x HP] | [x HQ]].
+    exists x. left. apply HP.
+    exists x. right. apply HQ.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -707,14 +753,44 @@ Lemma In_map_iff :
     In y (map f l) <->
     exists x, f x = y /\ In x l.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split.
+  - intros H. induction l as [|x' l'].
+    + simpl in H. inversion H.
+    + destruct H. exists x'. split.
+      * apply H.
+      * simpl. left. reflexivity.
+      * apply IHl' in H. destruct H. exists x. split.
+        { apply H. }
+        { simpl. right. apply H. }
+  - intros [x [H1 H2]]. induction l as [|x' l'].
+    + simpl. simpl in H2. apply H2.
+    + simpl. destruct H2 as [H2l | H2r].
+      * rewrite -> H2l. left. apply H1.
+      * right. apply IHl'. apply H2r.
+Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, standard (In_app_iff)  *)
 Lemma In_app_iff : forall A l l' (a:A),
   In a (l++l') <-> In a l \/ In a l'.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split.
+  - induction l as [|x ls].
+    + simpl. intros H. right. apply H.
+    + simpl. intros [H1 | H2].
+      * left. left. apply H1.
+      * rewrite <- or_assoc. right. apply IHls. apply H2.
+  - induction l as [|x' ls].
+    + simpl. intros [HF | HI].
+      * inversion HF.
+      * apply HI.
+    + simpl. intros [[xa|Ia]|Ial].
+      * left. apply xa.
+      * right. apply IHls. left. apply Ia.
+      * right. apply IHls. right. apply Ial.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard, recommended (All)  
@@ -726,15 +802,26 @@ Proof.
     中的所有元素成立。为了确定你的定义是正确的，请在下方证明 [All_In] 引理。
     （当然，你的定义_'不应该'_为了通过测试就把 [All_In] 的左边复述一遍。 ） *)
 
-Fixpoint All {T : Type} (P : T -> Prop) (l : list T) : Prop
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
-
-Lemma All_In :
-  forall T (P : T -> Prop) (l : list T),
-    (forall x, In x l -> P x) <->
+Fixpoint All {T : Type} (P : T -> Prop) (l : list T) : Prop :=
+  match l with
+  | [] => True
+  | x :: t => P x /\ All P t
+  end.
     All P l.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split.
+  - intros H. induction l as [|x ls].
+    + simpl in H. simpl. apply I.
+    + simpl. split.
+      * apply H. simpl. left. reflexivity.
+      * apply IHls. intros x' HI. apply H. simpl. right. apply HI.
+  - intros H x H2. induction l as [|x' l'].
+    + simpl in H. simpl in H2. inversion H2.
+    + destruct H as [Hl Hr]. destruct H2 as [H2l | H2r].
+      * rewrite <- H2l. apply Hl.
+      * apply IHl'. apply Hr. apply H2r.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (combine_odd_even)  
@@ -743,8 +830,11 @@ Proof.
     [Podd] 与 [Peven]，返回性质 [P] 使得当 [n] 为奇数时 [P n] 等价于 [Podd n]，
     否则等价于 [Peven n]。*)
 
-Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+  fun (n : nat) => match (oddb n) with
+              | true => Podd n
+              | _ => Peven n
+              end.
 
 (** 为了测试你的定义，请证明以下事实： *)
 
@@ -754,7 +844,12 @@ Theorem combine_odd_even_intro :
     (oddb n = false -> Peven n) ->
     combine_odd_even Podd Peven n.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction n as [|n'].
+  - apply H0. reflexivity.
+  - unfold combine_odd_even. destruct (oddb (S n')).
+    + apply H. reflexivity.
+    + apply H0. reflexivity.
+Qed.
 
 Theorem combine_odd_even_elim_odd :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -762,7 +857,10 @@ Theorem combine_odd_even_elim_odd :
     oddb n = true ->
     Podd n.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction n as [|n'].
+  - unfold combine_odd_even in H. simpl in H. discriminate.
+  - unfold combine_odd_even in H. rewrite H0 in H. apply H.
+Qed.
 
 Theorem combine_odd_even_elim_even :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -770,7 +868,11 @@ Theorem combine_odd_even_elim_even :
     oddb n = false ->
     Peven n.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction n as [|n'].
+  - unfold combine_odd_even in H. rewrite H0 in H. apply H.
+  - unfold combine_odd_even in H. rewrite H0 in H. apply H.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -787,7 +889,7 @@ Proof.
 
 Check plus_comm.
 (* ===> forall n m : nat, n + m = m + n *)
-
+Check mult_assoc.
 (** 在显示对定理 [plus_comm] 的_'陈述'_时，Coq 使用了与显示某项的_'类型'_一样的方式。
     这是为什么？ *)
 
@@ -1022,7 +1124,8 @@ Definition tr_rev {X} (l : list X) : list X :=
     一个足够好的编译器会对此生成十分高效的代码。请证明以下两个定义等价。 *)
 
 Lemma tr_rev_correct : forall X, @tr_rev X = @rev X.
-(* 请在此处解答 *) Admitted.
+Proof.
+Admitted.
 (** [] *)
 
 (* ================================================================= *)
@@ -1057,10 +1160,16 @@ Theorem evenb_double_conv : forall n,
   exists k, n = if evenb n then double k
                 else S (double k).
 Proof.
+  intros. induction n as [|n'].
+  - simpl. exists 0. reflexivity.
+  - rewrite evenb_S. destruct (evenb n').
+    + destruct IHn'. simpl. exists x. rewrite <- H. reflexivity.
+    + destruct IHn'. simpl. exists (S x). rewrite H. simpl. reflexivity.
+Qed.
   (* 提示：使用 [Induction.v] 中的 [evenb_S] 引理。  *)
-  (* 请在此处解答 *) Admitted.
-(** [] *)
 
+(** [] *)
+Check evenb_S.
 Theorem even_bool_prop : forall n,
   evenb n = true <-> exists k, n = double k.
 Proof.
@@ -1189,12 +1298,43 @@ Qed.
 Lemma andb_true_iff : forall b1 b2:bool,
   b1 && b2 = true <-> b1 = true /\ b2 = true.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split.
+  - destruct b1.
+    + destruct b2.
+      * intros H. split. reflexivity. reflexivity.
+      * intros H. split. reflexivity. discriminate.
+    + destruct b2.
+      * intros H. split. discriminate. reflexivity.
+      * intros H. split. discriminate. discriminate.
+  - destruct b1.
+    + destruct b2.
+      * intros H. reflexivity.
+      * intros [H1 H2]. simpl. apply H2.
+    + destruct b2.
+      * intros [H1 H2]. simpl. apply H1.
+      * intros [H1 H2]. simpl. apply H1.
+Qed.
 
 Lemma orb_true_iff : forall b1 b2,
   b1 || b2 = true <-> b1 = true \/ b2 = true.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. split.
+  - destruct b1.
+    + destruct b2.
+      * intros H. left. reflexivity.
+      * intros H. simpl in H. left. reflexivity.
+    + destruct b2.
+      * intros H. simpl in H. right. reflexivity.
+      * intros H. simpl in H. left. apply H.
+  - destruct b1.
+    + destruct b2.
+      * intros [H1 | H2]. reflexivity. reflexivity.
+      * intros [H1 | H2]. reflexivity. reflexivity.
+    + destruct b2.
+      * intros [H1 | H2]. reflexivity. reflexivity.
+      * intros [H1 | H2]. simpl. apply H1. simpl. apply H2.
+Qed.
+
 (** [] *)
 
 (** **** 练习：1 星, standard (eqb_neq)  
@@ -1205,6 +1345,8 @@ Proof.
 Theorem eqb_neq : forall x y : nat,
   x =? y = false <-> x <> y.
 Proof.
+(*  intros. split.
+  - intros. unfold not. intros. *)
   (* 请在此处解答 *) Admitted.
 (** [] *)
 
@@ -1342,7 +1484,10 @@ Qed.
 Theorem excluded_middle_irrefutable: forall (P:Prop),
   ~ ~ (P \/ ~ P).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold not. intros. apply H.
+  right. intros H1. apply H. left. apply H1.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, advanced (not_exists_dist)  
@@ -1360,7 +1505,7 @@ Theorem not_exists_dist :
   forall (X:Type) (P : X -> Prop),
     ~ (exists x, ~ P x) -> (forall x, P x).
 Proof.
-  (* 请在此处解答 *) Admitted.
+Admitted.
 (** [] *)
 
 (** **** 练习：5 星, standard, optional (classical_axioms)  
