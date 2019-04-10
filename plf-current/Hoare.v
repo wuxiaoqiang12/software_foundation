@@ -1442,8 +1442,8 @@ Definition ex1_repeat :=
 Theorem ex1_repeat_works :
   empty_st =[ ex1_repeat ]=> (Y !-> 1 ; X !-> 1).
 Proof.
-  constructor.
-  eapply E_Seq; constructor; reflexivity.
+  (* constructor. *)
+  (* eapply E_Seq; constructor; reflexivity. *)
 Admitted.
 
 (** 现在写出并证明一个定理 [hoare_repeat] 表达一个 [repeat]
@@ -1461,18 +1461,18 @@ Theorem hoare_repeat : forall P Q c b,
   (fun st => Q st /\ ~(bassn b st)) ->> P ->
   {{P}} REPEAT c UNTIL b END {{fun st => Q st /\ bassn b st}}.
 Proof.
-   intros P Q c b HEnd HRepeat st st' Hc HP.
-   remember (REPEAT c UNTIL b END) as rcom.
-   induction Hc; inversion Heqrcom; subst. clear Heqrcom.
-   split. apply (HEnd st st'); assumption.
-   apply bexp_eval_true in H. apply IHHc.
+  Admitted.
+   (* intros P Q c b HEnd HRepeat st st' Hc HP. *)
+  (*  remember (REPEAT c UNTIL b END) as rcom. *)
+  (*  induction Hc; inversion Heqrcom; subst. clear Heqrcom. *)
+  (*  split. apply (HEnd st st'); assumption. *)
+  (*  apply bexp_eval_true in H. apply IHHc. *)
 
 
-   unfold hoare_triple; intros. generalize dependent P.
-  remember (REPEAT c UNTIL b END) as loopdef eqn:loop.
-  induction H1; inversion loop; subst. intros. apply conj.
-  eapply H2. apply H1. assumption. apply bexp_eval_true; auto.
-  
+  (*  unfold hoare_triple; intros. generalize dependent P. *)
+  (* remember (REPEAT c UNTIL b END) as loopdef eqn:loop. *)
+  (* induction H1; inversion loop; subst. intros. apply conj. *)
+  (* eapply H2. apply H1. assumption. apply bexp_eval_true; auto. *)
 
 (** 要拿到全部的分数，请确保（非正式即可）你的规则可以用来证明以下
     的霍尔三元组成立。
@@ -1484,7 +1484,7 @@ Proof.
   UNTIL X = 0 END
   {{ X = 0 /\ Y > 0 }}
 *)
-
+Abort All.
 End RepeatExercise.
 
 (* 请勿修改下面这一行： *)
@@ -1603,13 +1603,16 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
 (** 请通过定义 [havoc_pre] 来创建一个关于 [HAVOC] 的证明规则，并
     证明此规则是正确的。*)
 
-Definition havoc_pre (X : string) (Q : Assertion) : Assertion
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Definition havoc_pre (X : string) (Q : Assertion) : Assertion :=
+  fun st => forall n, Q (X !-> n; st).
 
 Theorem hoare_havoc : forall (Q : Assertion) (X : string),
   {{ havoc_pre X Q }} HAVOC X {{ Q }}.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold havoc_pre. intros Q X st st' H1 H2.
+  inversion H1. subst.
+  apply H2.
+Qed.
 
 End Himp.
 (** [] *)
@@ -1733,9 +1736,9 @@ Theorem assert_assume_differ : exists P b Q,
        ({{P}} ASSUME b {{Q}})
   /\ ~ ({{P}} ASSERT b {{Q}}).
 Proof.
-(* 请在此处解答 *) Admitted.
+  Admitted.
 
-Theorem assert_implies_assume : forall P b Q,
+Theorem assert_implies_assumptionsume : forall P b Q,
      ({{P}} ASSERT b {{Q}})
   -> ({{P}} ASSUME b {{Q}}).
 Proof.

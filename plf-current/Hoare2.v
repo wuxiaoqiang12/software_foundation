@@ -222,14 +222,14 @@ From PLF Require Import Imp.
        {{ True }}
       TEST X <= Y THEN
           {{                         }} ->>
-          {{                         }}
+          {{   Y = X + Z                        }}
         Z ::= Y - X
-          {{                         }}
+          {{Y = X + Z }}
       ELSE
-          {{                         }} ->>
-          {{                         }}
+          {{True /\ ~(X <= Y)}} ->>
+          {{X + Z = X + Z}}
         Y ::= X + Z
-          {{                         }}
+          {{ Y = X + Z }}
       FI
         {{ Y = X + Z }}
 *)
@@ -536,8 +536,25 @@ Proof.
     Write an informal decorated program showing that this procedure
     is correct. *)
 
-(* 请在此处解答 *)
+(*
 
+      {{ X = m }} ->>
+      {{0 + X = m}}
+      Y ::= 0
+      {{Y + X = m}}
+      WHILE ~(X = 0) DO
+      {{Y + X = m /\ ~(X = 0)}} ->>
+      {{(Y + 1) + (X - 1) = m}
+        X ::= X - 1;;
+        {{(Y + 1) + X = m}}
+        Y ::= Y + 1
+        {{Y + X = m}}
+      END
+        {{ Y + X = m /\X = 0}} ->>
+        {{ Y = m }}
+
+        Inv := Y + X = m
+*)
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string) := None.
 (** [] *)
@@ -560,8 +577,20 @@ Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string)
     specification of [add_slowly]; then (informally) decorate the
     program accordingly. *)
 
-(* 请在此处解答 
-
+(* 请在此处解答
+      {{X = m /\ Z = n}} ->>
+      {{X + Z = m + n}}
+      WHILE ~(X = 0) DO
+      {{X + Z = m + n /\ ~(X = 0)}} ->>
+      {{(X - 1) + (Z + 1) = m + n}}
+         Z ::= Z + 1;;
+         {{(X - 1) + Z = m + n}}
+         X ::= X - 1
+         {{X + Z = m + n}}
+      END
+        {{X + Z = m + n /\ X = 0}} ->>
+        {{Z = m + n}}
+        Inv := X + Z = m + n
     [] *)
 
 (* ================================================================= *)
@@ -642,7 +671,16 @@ Theorem parity_correct : forall m,
   END
     {{ fun st => st X = parity m }}.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. eapply hoare_consequence_post.
+  apply hoare_consequence_pre with (fun st => parity (st X) = parity m).
+  apply hoare_while.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn. intros st [H1 H2]. unfold assn_sub.
+  rewrite -> t_update_eq. simpl. rewrite parity_ge_2. assumption.
+  unfold bassn in H2.
+Abort.
+
+
 (** [] *)
 
 (* ================================================================= *)
@@ -808,18 +846,18 @@ Proof.
     well-defined on natural numbers.
 
     {{ X = m }} ->>
-    {{                                      }}
+    {{  1 * X! = m!  }}
   Y ::= 1;;
-    {{                                      }}
+    {{   Y * X! = m!  }}
   WHILE ~(X = 0)
-  DO   {{                                      }} ->>
-       {{                                      }}
+  DO   {{   Y * X! = m! /\ ~(x = 0)   }} ->>
+       {{  Y * X * (X - 1)! = m!   }}
      Y ::= Y * X;;
-       {{                                      }}
+       {{  Y * (X - 1)! = m!  }}
      X ::= X - 1
-       {{                                      }}
+       {{  Y * X! = m!  }}
   END
-    {{                                      }} ->>
+    {{ Y * X! = m! /\ X = 0  }} ->>
     {{ Y = m! }}
 *)
 
@@ -852,24 +890,24 @@ Definition manual_grade_for_decorations_in_factorial : option (nat*string) := No
   plus standard high-school algebra, as always.
 
   {{ True }} ->>
-  {{                    }}
+  {{ 0 + min a b = min a b }}
   X ::= a;;
-  {{                       }}
+  {{ 0 + min X b = min a b }}
   Y ::= b;;
-  {{                       }}
+  {{ 0 + min X Y = min a b }}
   Z ::= 0;;
-  {{                       }}
+  {{ Z + min X Y = min a b }}
   WHILE ~(X = 0) && ~(Y = 0) DO
-  {{                                     }} ->>
-  {{                                }}
+  {{ Z + min X Y = min a b /\ ( ~(X = 0) /\ ~(Y = 0) )}} ->>
+  {{ (Z + 1) + (min (X - 1) (Y - 1)) = min a b }}
   X := X - 1;;
-  {{                            }}
+  {{ (Z + 1) + (min X (Y - 1)) = min a b}}
   Y := Y - 1;;
-  {{                        }}
+  {{ Z + 1 + min X Y = min a b }}
   Z := Z + 1
-  {{                       }}
+  {{ Z + min X Y = min a b }}
   END
-  {{                            }} ->>
+  {{ Z + min X Y = min a b /\ ( X = 0 \/ Y = 0 ) }} ->>
   {{ Z = min a b }}
 *)
 
@@ -897,32 +935,32 @@ Definition manual_grade_for_decorations_in_Min_Hoare : option (nat*string) := No
     following decorated program.
 
       {{ True }} ->>
-      {{                                        }}
+      {{ c = 0 + 0 + c  }}
     X ::= 0;;
-      {{                                        }}
+      {{ c = X + 0 + c  }}
     Y ::= 0;;
-      {{                                        }}
+      {{ c = X + Y + c }}
     Z ::= c;;
-      {{                                        }}
+      {{ Z = X + Y + c }}
     WHILE ~(X = a) DO
-        {{                                        }} ->>
-        {{                                        }}
+        {{ Z = X + Y + c /\ ~( X = a )  }} ->>
+        {{ Z + 1 = ( X + 1) + Y + c  }}
       X ::= X + 1;;
-        {{                                        }}
+        {{ Z + 1 = X + Y + c }}
       Z ::= Z + 1
-        {{                                        }}
+        {{ Z = X + Y + c }}
     END;;
-      {{                                        }} ->>
-      {{                                        }}
+      {{ Z = X + Y + c /\ ( X = a )  }} ->>
+      {{ Z = X + Y + c }}
     WHILE ~(Y = b) DO
-        {{                                        }} ->>
-        {{                                        }}
+        {{ Z = X + Y + c /\ (X = a) /\ ~(Y = b) }} ->>
+        {{ Z + 1 = X + ( Y + 1 ) + c  }}
       Y ::= Y + 1;;
-        {{                                        }}
+        {{ Z + 1 = X + Y + c }}
       Z ::= Z + 1
-        {{                                        }}
+        {{ Z = X + Y + c  }}
     END
-      {{                                        }} ->>
+      {{ Z = X + Y + c /\ (X = a) /\ (Y = b)  }} ->>
       {{ Z = a + b + c }}
 *)
 
@@ -949,8 +987,27 @@ Definition manual_grade_for_decorations_in_two_loops : option (nat*string) := No
 
     Write a decorated program for this. *)
 
-(* 请在此处解答 
-
+(* 请在此处解答
+   {{true}} ->>
+   {{1 = 2^(0 + 1) - 1}}
+    X ::= 0;;
+    {{1 = 2^(X + 1) - 1}}
+    Y ::= 1;;
+    {{Y = 2^(X + 1) - 1}}
+    Z ::= 1;;
+    {{Y = 2^(X + 1) - 1}}
+    WHILE ~(X = m) DO
+    {{Y = 2^(X + 1) /\ ~(X = m)}} ->>
+    {{Y + (2 * Z) = 2^((X + 1) + 1) - 1}}
+      Z ::= 2 * Z;;
+      {{ Y + Z = 2^((X + 1) + 1) - 1 }}
+      Y ::= Y + Z;;
+      {{ Y = 2^((X + 1) + 1) - 1 }}
+      X ::= X + 1
+      {{ Y = 2^(X + 1) - 1 }}
+    END
+    {{ Y = 2^(X + 1) - 1 /\ X = m }} ->>
+    {{ Y = 2^(m + 1) - 1 }}
     [] *)
 
 (* ################################################################# *)
@@ -1002,21 +1059,21 @@ Definition is_wp P c Q :=
     What are the weakest preconditions of the following commands
    for the following postconditions?
 
-  1) {{ ? }}  SKIP  {{ X = 5 }}
+  1) {{ X = 5  }}  SKIP  {{ X = 5 }}
 
-  2) {{ ? }}  X ::= Y + Z {{ X = 5 }}
+  2) {{ Y + Z = 5 }}  X ::= Y + Z {{ X = 5 }}
 
-  3) {{ ? }}  X ::= Y  {{ X = Y }}
+  3) {{ True / Y = Y }}  X ::= Y  {{ X = Y }}
 
-  4) {{ ? }}
+  4) {{ Z + 1 = 5 \/ W + 2 = 5 }}
      TEST X = 0 THEN Y ::= Z + 1 ELSE Y ::= W + 2 FI
      {{ Y = 5 }}
 
-  5) {{ ? }}
+  5) {{ 5 = 0 }}
      X ::= 5
      {{ X = 0 }}
 
-  6) {{ ? }}
+  6) {{ True }}
      WHILE true DO X ::= 0 END
      {{ X = 0 }}
 *)
@@ -1034,7 +1091,14 @@ Theorem is_wp_example :
   is_wp (fun st => st Y <= 4)
     (X ::= Y + 1) (fun st => st X <= 5).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold is_wp. split. intros st st' H1 H2.
+  inversion H1; subst. rewrite -> t_update_eq.
+  simpl. omega.
+  unfold hoare_triple. intros P' Hhoare st HP'.
+  apply Hhoare with (st' := (X !-> (st Y + 1); st)) in HP'.
+  rewrite t_update_eq in HP'. omega.
+  constructor. simpl. reflexivity.
+Qed.
 (** [] *)
 
 (** **** 练习：2 星, advanced, optional (hoare_asgn_weakest)  
@@ -1045,7 +1109,15 @@ Proof.
 Theorem hoare_asgn_weakest : forall Q X a,
   is_wp (Q [X |-> a]) (X ::= a) Q.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. unfold is_wp. split.
+  apply hoare_asgn.
+  unfold hoare_triple.
+  unfold assn_sub. intros P' Hhoare st HP'.
+  apply Hhoare with (st' := (X !-> (aeval st a); st)) in HP'.
+  assumption.
+  constructor. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, advanced, optional (hoare_havoc_weakest)  
@@ -1059,7 +1131,11 @@ Lemma hoare_havoc_weakest : forall (P Q : Assertion) (X : string),
   {{ P }} HAVOC X {{ Q }} ->
   P ->> havoc_pre X Q.
 Proof.
-(* 请在此处解答 *) Admitted.
+  unfold hoare_triple, havoc_pre. intros P Q X H st HP n.
+  apply H with (st' := X !-> n; st) in HP. assumption.
+  constructor.
+Qed.
+
 End Himp2.
 (** [] *)
 
@@ -1950,12 +2026,26 @@ Qed.
     incrementing [Y] at each step.  Write a formal version of this
     decorated program and prove it correct. *)
 
-Example slow_assignment_dec (m : nat) : decorated
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Example slow_assignment_dec (m : nat) : decorated :=
+  {{ fun st => st X = m }} ->>
+      {{fun st => 0 + st X = m}}
+      Y ::= 0
+      {{fun st => st Y + st X = m}};;
+      WHILE ~(X = 0) DO
+      {{fun st => st Y + st X = m /\ ~(st X = 0)}} ->>
+      {{fun st => (st Y + 1) + (st X - 1) = m}}
+        X ::= X - 1
+        {{fun st => (st Y + 1) + st X = m}};;
+        Y ::= Y + 1
+        {{fun st => st Y + st X = m}}
+      END
+        {{fun st => st Y + st X = m /\ st X = 0}} ->>
+        {{fun st => st Y = m}}.
 
 Theorem slow_assignment_dec_correct : forall m,
   dec_correct (slow_assignment_dec m).
-Proof. (* 请在此处解答 *) Admitted.
+Proof.
+  intros. verify. Qed.
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_check_defn_of_slow_assignment_dec : option (nat*string) := None.
@@ -1976,6 +2066,29 @@ Fixpoint real_fact (n : nat) : nat :=
     prove it correct as [factorial_dec_correct]. *)
 
 (* 请在此处解答 *)
+Example factorial_dec (m : nat) : decorated :=
+  {{fun st => st X = m }} ->>
+    {{fun st => 1 * real_fact (st X) = real_fact m }}
+  Y ::= 1
+    {{fun st => (st Y) * real_fact (st X) = real_fact m }};;
+  WHILE ~(X = 0)
+  DO   {{fun st => (st Y) * real_fact (st X) = real_fact m /\ ~(st X = 0) }} ->>
+       {{fun st => (st Y) * (st X) * real_fact (st X - 1) = real_fact m }}
+     Y ::= Y * X
+       {{fun st => (st Y) * real_fact (st X - 1) = real_fact m }};;
+     X ::= X - 1
+       {{fun st => (st Y) * real_fact (st X) = real_fact m }}
+  END
+  {{fun st => (st Y) * real_fact (st X) = real_fact m /\ st X = 0  }} ->>
+  {{fun st => st Y = real_fact m }}.
+
+Theorem factorial_dec_correct : forall m,
+  dec_correct (factorial_dec m).
+Proof.
+  intros. verify.
+  assert (forall n, n <> 0 -> n * real_fact (n - 1) = real_fact n).
+  intros. destruct n.
+  Abort.
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_factorial_dec : option (nat*string) := None.
