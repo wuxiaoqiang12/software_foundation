@@ -168,7 +168,11 @@ Hint Unfold stuck.
 Example some_term_is_stuck :
   exists t, stuck t.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  exists (scc tru). unfold stuck. split.
+  - unfold step_normal_form. unfold not. intros. inversion H. inversion H0. inversion H2.
+  - unfold not. intros. inversion H. inversion H0. inversion H0. inversion H2.
+Qed.
+
 (** [] *)
 
 (** 然而，值和正规式在这个语言中_'并不'_相同，值的集合被包括在正规式的集合中。
@@ -178,7 +182,16 @@ Proof.
 Lemma value_is_nf : forall t,
   value t -> step_normal_form t.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction t.
+  - intros H0. inversion H0. inversion H1.
+  - intros H0. inversion H0. inversion H1.
+  - intros H0. inversion H. inversion H1. inversion H1.
+  - intros H0. inversion H0. inversion H1.
+  - intros H0. inversion H0. inversion H. apply IHt. inversion H2. inversion H2. inversion H2.
+    apply IHt. unfold value. right. auto. inversion H1. exists t1'. auto.
+  - intros H0. inversion H0. inversion H. inversion H2. apply IHt. inversion H2. inversion H2.
+  - intros H0. inversion H0. inversion H. inversion H2. apply IHt. inversion H2. inversion H2.
+Qed.
 
 (** （提示：在证明中的某个地方，你需要使用归纳来推理某个项，这个项已知是数值。
     归纳可以对项本身进行，也可以对它是数值这个证据进行。两种方法均可完成证明，
@@ -193,7 +206,16 @@ Proof.
 Theorem step_deterministic:
   deterministic step.
 Proof with eauto.
-  (* 请在此处解答 *) Admitted.
+  intros x y1 y2 Hy1 Hy2. generalize dependent y2. induction Hy1.
+  - intros. inversion Hy2. reflexivity. inversion H3.
+  - intros. inversion Hy2. reflexivity. inversion H3.
+  - intros. inversion Hy2. rewrite <- H0 in Hy1. inversion Hy1.
+    rewrite <- H0 in Hy1. inversion Hy1. apply IHHy1 in H3. rewrite H3. reflexivity.
+  - intros. inversion Hy2. apply IHHy1 in H0. rewrite H0. auto.
+  - intros. inversion Hy2. reflexivity. inversion H0.
+  - intros. inversion Hy2. reflexivity. inversion Hy2. auto. 
+Admitted.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -294,7 +316,9 @@ Example scc_hastype_nat__hastype_nat : forall t,
   |- scc t \in Nat ->
   |- t \in Nat.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. inversion H. auto.
+Qed.
+
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -346,7 +370,19 @@ Proof with auto.
     + (* t1 可前进一步 *)
       inversion H as [t1' H1].
       exists (test t1' t2 t3)...
-  (* 请在此处解答 *) Admitted.
+  - (* T_Scc *) inversion IHHT. left. unfold value. right. inversion H. inversion H0.
+    subst. inversion HT. subst. inversion HT. constructor. auto.
+    right. inversion H. exists (scc x). constructor. auto.
+  - (* T_Prd *) inversion IHHT. right. inversion H. inversion H0.
+    subst. inversion HT. subst. inversion HT. inversion H0. exists zro. constructor.
+    exists t. constructor. auto.
+    inversion H. right. exists (prd x). constructor. auto.
+  - (* T_Iszro *) inversion IHHT. right. inversion H. inversion H0. subst.
+    inversion HT. subst. inversion HT.
+    inversion H0. exists tru. auto. exists fls. auto.
+    inversion H. right. exists (iszro x). auto.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, advanced (finish_progress_informal)  
@@ -406,7 +442,11 @@ Proof with auto.
       + (* ST_TestFls *) assumption.
       + (* ST_Test *) apply T_Test; try assumption.
         apply IHHT1; assumption.
-    (* 请在此处解答 *) Admitted.
+    - (* T_Scc *) inversion HE. apply T_Scc. subst. apply IHHT. auto.
+    - (* T_Prd *) inversion HE. constructor. subst. inversion HT. auto. auto.
+    - (* T_Iszro *) inversion HE. constructor. constructor. subst. apply IHHT in H0. constructor. auto.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, advanced (finish_preservation_informal)  
@@ -452,7 +492,18 @@ Theorem preservation' : forall t t' T,
   t --> t' ->
   |- t' \in T.
 Proof with eauto.
-  (* 请在此处解答 *) Admitted.
+  (* intros t t' T HT HE. *)
+  (* induction HE; try (inversion HT; subst; auto). *)
+  (* - assert (|- t1' \in Bool). *)
+
+  intros t t' T H1.
+  generalize dependent t'. intros.
+  generalize dependent H1.
+  generalize dependent T.
+  induction H; intros T H1; try( inversion H1; subst; auto).
+  - inversion H2; subst. auto.
+Qed.
+
 (** [] *)
 
 (** 维型性定理也经常被称作_'主语归约（subject reduction）'_，因为它告诉了

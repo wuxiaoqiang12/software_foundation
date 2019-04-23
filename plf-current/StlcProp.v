@@ -141,7 +141,19 @@ Theorem progress' : forall t T,
 Proof.
   intros t.
   induction t; intros T Ht; auto.
-  (* 请在此处解答 *) Admitted.
+  - (* T_Var *) left. inversion Ht. subst. inversion H1.
+  - (* T_App *) right. inversion Ht. subst. apply IHt1 in H2. apply IHt2 in H4. destruct H2...
+    + (* t1 is a value *) destruct H4...
+      * (* t2 is a value too *) inversion H; subst. exists ([x0:=t2]t). apply ST_AppAbs. auto.
+        solve_by_inverts 2. solve_by_inverts 2.
+      * (* t2 can step *) inversion H0; subst. exists (app t1 x0). apply ST_App2. auto. auto.
+    + (* t1 can step *) inversion H. subst. exists (app x0 t2). auto.
+  - (* T_Test *) right. inversion Ht; subst. apply IHt1 in H3. inversion H3.
+    + (* t1 is a value *) inversion H; subst. solve_by_inverts 2. exists (t2). constructor.
+      exists t3. constructor.
+    + (* t1 can step *) inversion H; subst. exists (test x0 t2 t3). constructor. auto.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -315,7 +327,11 @@ Corollary typable_empty__closed : forall t T,
     empty |- t \in T  ->
     closed t.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold closed, not. intros t T Hty x Hafi.
+  apply free_in_context with (T:=T) (Gamma:=empty) in Hafi.
+  solve_by_inverts 2. auto.
+Qed.
+
 (** [] *)
 
 (** Sometimes, when we have a proof of some typing relation
@@ -371,6 +387,10 @@ Lemma context_invariance : forall Gamma Gamma' t T,
         under [Gamma'] as under [Gamma].  But all free variables in
         [t1] are also free in [t1 t2], and similarly for [t2]; hence
         the desired result follows from the induction hypotheses. *)
+
+Check ((nat -> nat) -> nat).
+Check Set.
+Check Type.
 
 Proof with eauto.
   intros.

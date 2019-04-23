@@ -342,7 +342,27 @@ where "'[' x ':=' s ']' t" := (subst x s t).
 Inductive substi (s : tm) (x : string) : tm -> tm -> Prop :=
   | s_var1 :
       substi s x (var x) s
-  (* 请在此处解答 *)
+  | s_var2 : forall y:string,
+      x <> y -> substi s x (var y) (var y)
+  | s_abs1 : forall T t,
+      substi s x (abs x T t) (abs x T t)
+  | s_abs2 : forall y T t t',
+      x <> y ->
+      substi s x t t' ->
+      substi s x (abs y T t) (abs y T t')
+  | s_app : forall t1 t2 t1' t2',
+      substi s x t1 t1' ->
+      substi s x t2 t2' ->
+      substi s x (app t1 t2) (app t1' t2')
+  | s_tru :
+      substi s x tru tru
+  | s_fls :
+      substi s x fls fls
+  | s_test : forall t1 t1' t2 t2' t3 t3',
+      substi s x t1 t1' ->
+      substi s x t2 t2' ->
+      substi s x t3 t3' ->
+      substi s x (test t1 t2 t3) (test t1' t2' t3')
 .
 
 Hint Constructors substi.
@@ -350,7 +370,41 @@ Hint Constructors substi.
 Theorem substi_correct : forall s x t t',
   [x:=s]t = t' <-> substi s x t t'.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros s x t t'. split.
+  - generalize dependent t'. induction t.
+    + simpl. destruct (eqb_string x s0) eqn:Hsx. Search (_ = true -> _ = _).
+      Search string. apply eqb_string_true_iff in Hsx. intros; subst. constructor.
+      apply eqb_string_false_iff in Hsx. intros; subst. constructor. auto.
+    + simpl. intros. rewrite <- H. constructor. apply IHt1. reflexivity. apply IHt2. reflexivity.
+    + simpl. destruct (eqb_string x s0) eqn:Hsx.
+      apply eqb_string_true_iff in Hsx. intros; subst. constructor.
+      apply eqb_string_false_iff in Hsx. intros; subst. constructor. auto.
+      apply IHt. reflexivity.
+    + simpl. intros. subst. constructor.
+    + simpl. intros. subst. constructor.
+    + simpl. intros. rewrite <- H. constructor. apply IHt1. reflexivity.
+      apply IHt2. reflexivity.
+      apply IHt3. reflexivity.
+  - generalize dependent t'. induction t.
+    + simpl. destruct (eqb_string x s0) eqn:Hsx.
+      apply eqb_string_true_iff in Hsx. intros; subst.
+      inversion H. reflexivity. subst. destruct H1. reflexivity.
+      apply eqb_string_false_iff in Hsx. intros; subst.
+      inversion H. subst. 2 : reflexivity. destruct Hsx. reflexivity.
+    + simpl. intros; subst. inversion H. subst.
+      apply IHt2 in H4. apply IHt1 in H2. rewrite H2. rewrite H4. reflexivity.
+    + simpl. destruct (eqb_string x s0) eqn:Hsx.
+      apply eqb_string_true_iff in Hsx. intros. subst.
+      inversion H. subst. reflexivity. subst. apply IHt in H5. destruct H5. destruct H4. reflexivity.
+      apply eqb_string_false_iff in Hsx. intros; subst.
+      inversion H. subst. destruct Hsx. auto. subst.
+      apply IHt in H5. destruct H5. reflexivity.
+    + intros. simpl. inversion H. auto.
+    + intros. simpl. inversion H. auto.
+    + simpl. intros. inversion H. subst. apply IHt1 in H3.
+      apply IHt2 in H5. apply IHt3 in H6. subst. reflexivity.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -537,13 +591,16 @@ Lemma step_example5 :
        app (app idBBBB idBB) idB
   -->* idB.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  eapply multi_step. apply ST_App1. apply ST_AppAbs. auto.
+  eapply multi_step. apply ST_AppAbs. auto.
+  apply multi_refl.
+Qed.
 
 Lemma step_example5_with_normalize :
        app (app idBBBB idBB) idB
   -->* idB.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  normalize. Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -672,7 +729,12 @@ Example typing_example_2_full :
           (app (var y) (app (var y) (var x))))) \in
     (Arrow Bool (Arrow (Arrow Bool Bool) Bool)).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  apply T_Abs. apply T_Abs. apply T_App with Bool.
+  apply T_Var. reflexivity.
+  apply T_App with Bool. apply T_Var. reflexivity.
+  apply T_Var. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, standard (typing_example_3)  
@@ -694,7 +756,12 @@ Example typing_example_3 :
                (app (var y) (app (var x) (var z)))))) \in
       T.
 Proof with auto.
-  (* 请在此处解答 *) Admitted.
+  exists (Arrow (Arrow Bool Bool) (Arrow (Arrow Bool Bool) (Arrow Bool Bool))).
+  apply T_Abs. apply T_Abs. apply T_Abs. apply T_App with Bool.
+  apply T_Var. auto.
+  apply T_App with Bool. auto. auto.
+Qed.
+
 (** [] *)
 
 (** 我们也可以证明某些项_'不'_可定型。比如说，我们可以形式化地检查对于
@@ -729,6 +796,13 @@ Proof.
     ~ (exists S T,
           empty |- \x:S. x x \in T).
 *)
+Lemma no_infinite_nested_type :
+  ~(exists T, exists S, T = Arrow T S).
+Proof.
+  intros Hc. inversion Hc as [T H]. clear Hc. induction T.
+  inversion H. inversion H0.
+  inversion H. inversion H0. apply IHT1. exists T2. auto.
+Qed.
 
 Example typing_nonexample_3 :
   ~ (exists S T,
@@ -737,7 +811,15 @@ Example typing_nonexample_3 :
              (app (var x) (var x))) \in
           T).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros Hc. inversion Hc as [S H]. clear Hc.
+  inversion H as [T H1]. subst.
+  inversion H1. subst. clear H1.
+  inversion H6. subst. clear H6.
+  inversion H3. subst. clear H3.
+  inversion H2. subst. inversion H5. subst. rewrite H2 in H3. inversion H3.
+  symmetry in H1. apply no_infinite_nested_type. exists T11. exists T12. assumption.
+Qed.
+
 (** [] *)
 
 End STLC.

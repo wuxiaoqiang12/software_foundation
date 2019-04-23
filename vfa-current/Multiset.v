@@ -46,14 +46,20 @@ Lemma union_assoc: forall a b c : multiset, (* assoc stands for "associative" *)
 Proof.
   intros.
   extensionality x.
-(* 请在此处解答 *) Admitted.
+  unfold union. Search (_ + (_ + _) = _ + _ + _).
+  apply Nat.add_assoc.
+Qed.
+
 (** [] *)
 
 (** **** 练习：1 星, standard (union_comm)  *)
 Lemma union_comm: forall a b : multiset,  (* comm stands for "commutative" *)
    union a b = union b a.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. unfold union. extensionality x.
+  apply Nat.add_comm.
+Qed.
+
 (** [] *)
 
 (** Remark on efficiency:  These multisets aren't very efficient.  If
@@ -81,8 +87,8 @@ Proof. simpl. reflexivity. Qed.
 Example sort_pi_same_contents:
     contents (sort [3;1;4;1;5;9;2;6;5;3;5]) = contents [3;1;4;1;5;9;2;6;5;3;5].
 Proof.
-extensionality x.
-do 10 (destruct x; try reflexivity).
+  extensionality x.
+  do 10 (destruct x; try reflexivity).
   (* Why does this work? Try it step by step, without [do 10] *)
 Qed.
 
@@ -105,7 +111,14 @@ Definition is_a_sorting_algorithm' (f: list nat -> list nat) :=
 
 Lemma insert_contents: forall x l, contents (x::l) = contents (insert x l).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction l.
+  - simpl. reflexivity.
+  - simpl. bdestruct (x <=? a). simpl. reflexivity.
+    simpl. simpl in IHl. rewrite <- IHl. rewrite -> union_assoc.
+    rewrite union_comm with (a:= (singleton x)).
+    rewrite <- union_assoc. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (sort_contents)  
@@ -113,7 +126,13 @@ Proof.
     Now prove that sort preserves contents. *)
 
 Theorem sort_contents: forall l, contents l = contents (sort l).
-(* 请在此处解答 *) Admitted.
+Proof.
+  intros. induction l.
+  simpl. reflexivity.
+  simpl. rewrite -> IHl. remember (sort l) as l'.
+  rewrite <- insert_contents. simpl. reflexivity.
+Qed.
+
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -160,7 +179,16 @@ Definition manual_grade_for_permutations_vs_multiset : option (nat*string) := No
 Lemma perm_contents:
   forall al bl : list nat,
    Permutation al bl -> contents al = contents bl.
-(* 请在此处解答 *) Admitted.
+Proof.
+  intros. induction H.
+  - reflexivity.
+  - simpl. rewrite -> IHPermutation. auto.
+  - simpl. rewrite -> union_assoc.
+    rewrite union_comm with (a:= (singleton y)).
+    rewrite <- union_assoc. reflexivity.
+  - rewrite -> IHPermutation1. auto.
+Qed.
+
 (** [] *)
 
 (** The other direction,
@@ -187,23 +215,29 @@ Proof.
   induction al.
   simpl. unfold empty, multiset_delete.
   bdestruct (x =? v); auto.
-  simpl.
-  bdestruct (a =? v).
-  (* 请在此处解答 *) Admitted.
+  simpl. bdestruct (a =? v).
+  unfold union. Admitted.
+
 (** [] *)
 
 (** **** 练习：2 星, standard (contents_perm_aux)  *)
 Lemma contents_perm_aux:
  forall v b, empty = union (singleton v) b -> False.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. Admitted.
+
+
 (** [] *)
 
 (** **** 练习：2 星, standard (contents_in)  *)
 Lemma contents_in:
   forall (a: value) (bl: list value) , contents bl a > 0 -> In a bl.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction bl. inversion H. simpl.
+  right. apply IHbl. Admitted.
+  
+
+
 (** [] *)
 
 (** **** 练习：2 星, standard (in_perm_delete)  *)
@@ -211,6 +245,9 @@ Lemma in_perm_delete:
   forall a bl,
   In a bl -> Permutation (a :: list_delete bl a) bl.
 Proof.
+  intros. induction bl. simpl. inversion H.
+  simpl. destruct (a0 =? a). 
+
 (* 请在此处解答 *) Admitted.
 (** [] *)
 

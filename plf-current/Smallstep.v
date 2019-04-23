@@ -162,7 +162,8 @@ Example test_step_2 :
           (C 2)
           (C (0 + 3))).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  apply ST_Plus2. apply ST_Plus2. apply ST_PlusConstConst. Qed.
+
 (** [] *)
 
 End SimpleArith1.
@@ -385,7 +386,23 @@ Inductive step : tm -> tm -> Prop :=
 Theorem step_deterministic :
   deterministic step.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros x y1 y2 Hy1 Hy2.
+  generalize dependent y2.
+  induction Hy1; intros y2 Hy2.
+  - inversion Hy2.
+    + reflexivity.
+    + inversion H2.
+    + inversion H3.
+  - inversion Hy2.
+    + rewrite <- H0 in Hy1. inversion Hy1.
+    + rewrite <- (IHHy1 t1'0). reflexivity. assumption.
+    + rewrite <- H in Hy1. rewrite <- H in H1. subst. inversion H1. subst. inversion Hy1.
+  - inversion Hy2; subst.
+    + inversion Hy1.
+    + inversion H; subst. inversion H3.
+    + rewrite <- (IHHy1 t2'0). reflexivity. assumption.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -415,7 +432,7 @@ Proof.
    或者，形式化地说： *)
 
 Theorem strong_progress : forall t,
-  value t \/ (exists t', t --> t').
+    value t \/ (exists t', t --> t').
 Proof.
   induction t.
   - (* C *) left. apply v_const.
@@ -516,7 +533,16 @@ Inductive step : tm -> tm -> Prop :=
 Lemma value_not_same_as_normal_form :
   exists v, value v /\ ~ normal_form step v.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold normal_form.
+  exists (P (P (C 1) (C 2)) (C 2)).
+  split. apply v_funny.
+  unfold not.
+  intros. apply H.
+  exists (P (C (1 + 2)) (C 2)).
+  apply ST_Plus1.
+  apply ST_PlusConstConst.
+Qed.
+
 End Temp1.
 
 (** [] *)
@@ -550,7 +576,12 @@ Inductive step : tm -> tm -> Prop :=
 Lemma value_not_same_as_normal_form :
   exists v, value v /\ ~ normal_form step v.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  exists (C 1).
+  split. apply v_const.
+  unfold normal_form. unfold not.
+  intros. apply H. exists (P (C 1) (C 0)).
+  apply ST_Funny.
+Qed.
 
 End Temp2.
 (** [] *)
@@ -582,7 +613,12 @@ Inductive step : tm -> tm -> Prop :=
 Lemma value_not_same_as_normal_form :
   exists t, ~ value t /\ normal_form step t.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  exists (P (C 1) (P (C 0) (C 0))).
+  split. intros H. inversion H.
+  unfold normal_form.
+  unfold not.
+  intros H. inversion H. inversion H0. inversion H4.
+Qed.
 
 End Temp3.
 (** [] *)
@@ -661,14 +697,29 @@ Definition manual_grade_for_smallstep_bools : option (nat*string) := None.
 Theorem strong_progress : forall t,
   value t \/ (exists t', t --> t').
 Proof.
-  (* 请在此处解答 *) Admitted.
+  induction t. left. constructor. left. constructor.
+  right. inversion IHt1.
+  inversion H.
+  exists t2. apply ST_IfTrue. exists t3. apply ST_IfFalse.
+  inversion H. exists (test x t2 t3).
+  apply ST_If. assumption.
+Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, standard, optional (step_deterministic)  *)
 Theorem step_deterministic :
   deterministic step.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold deterministic.
+  intros x y1 y2 Hy1 Hy2. generalize dependent y2.
+  induction Hy1. intros. inversion Hy2. reflexivity.
+  subst. inversion H3.
+  intros. inversion Hy2. reflexivity. inversion H3.
+  intros. inversion Hy2. subst. inversion Hy1. subst. inversion Hy1.
+  subst. apply IHHy1 in H3. subst. reflexivity.
+Qed.
+
 (** [] *)
 
 Module Temp5.
@@ -700,7 +751,8 @@ Inductive step : tm -> tm -> Prop :=
   | ST_If : forall t1 t1' t2 t3,
       t1 --> t1' ->
       test t1 t2 t3 --> test t1' t2 t3
-  (* 请在此处解答 *)
+  | ST_IfShortCircuit : forall t1 t2,
+      test t1 t2 t2 --> t2
 
   where " t '-->' t' " := (step t t').
 
@@ -715,7 +767,9 @@ Definition bool_step_prop4 :=
 Example bool_step_prop4_holds :
   bool_step_prop4.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  unfold bool_step_prop4. apply ST_IfShortCircuit.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard, optional (properties_of_altered_step)  
@@ -726,12 +780,28 @@ Proof.
     - [step] 关系是否仍然是确定的？请回答是或否，并简要解释（一句话即可）你的答案。
 
       可选：在 Coq 中证明你的答案。*)
-
+Theorem negb_step_deterministic :
+  ~ deterministic step.
+Proof.
+  intros H. unfold deterministic in H.
+  assert (test tru fls tru --> fls). constructor.
+  assert (fls = test fls fls fls).
+  apply H with (test (test tru fls tru) fls fls); constructor; constructor.
+  inversion H1.
+Qed.
 (* 请在此处解答 
    - 强可进性是否成立？请回答是或否，并简要解释（一句话即可）你的答案。
 
      可选：在 Coq 中证明你的答案。
 *)
+Theorem strong_progress : forall t,
+    value t \/ (exists t', t --> t').
+Proof.
+  intros. induction t; try(left; constructor).
+  right. inversion IHt1. inversion H. exists t2. constructor.
+  exists t3. constructor. inversion H. exists (test x t2 t3). constructor.
+  assumption.
+Qed.
 
 (* 请在此处解答 
    - 一般来说，如果从原始的单步关系中拿掉一两个构造子，能否使强可进性不再成立？
@@ -740,6 +810,29 @@ Proof.
 (* 请在此处解答 *)
 
     [] *)
+Module Temp6.
+
+  Reserved Notation " t '-->' t' " (at level 40).
+
+  Inductive step : tm -> tm -> Prop :=
+  | ST_IfTrue : forall t1 t2,
+      test tru t1 t2 --> t1
+  | ST_IfFalse : forall t1 t2,
+      test fls t1 t2 --> t2
+  | ST_ShortCircuit : forall t1 t2,
+      test t1 t2 t2 --> t2
+
+  where " t '-->' t' " := (step t t').
+
+  Theorem strong_progress : exists t,
+      ~ value t /\ ~(exists t', t --> t').
+  Proof.
+    exists (test (test fls fls tru) fls tru).
+    split. unfold not. intros. inversion H.
+    unfold not. intros. inversion H. inversion H0. inversion H4.
+  Qed.
+
+End Temp6.
 
 End Temp5.
 End Temp4.
@@ -870,7 +963,8 @@ Qed.
 Lemma test_multistep_2:
   C 3 -->* C 3.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  apply multi_refl. Qed.
+
 (** [] *)
 
 (** **** 练习：1 星, standard, optional (test_multistep_3)  *)
@@ -879,7 +973,7 @@ Lemma test_multistep_3:
    -->*
       P (C 0) (C 3).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  apply multi_refl. Qed.
 (** [] *)
 
 (** **** 练习：2 星, standard (test_multistep_4)  *)
@@ -894,7 +988,12 @@ Lemma test_multistep_4:
         (C 0)
         (C (2 + (0 + 3))).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  eapply multi_step. apply ST_Plus2. apply v_const.
+  apply ST_Plus2. apply v_const. apply ST_PlusConstConst.
+  eapply multi_step. apply ST_Plus2. apply v_const.
+  apply ST_PlusConstConst. apply multi_refl.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -922,7 +1021,22 @@ Proof.
   inversion P1 as [P11 P12]; clear P1.
   inversion P2 as [P21 P22]; clear P2.
   generalize dependent y2.
-  (* 请在此处解答 *) Admitted.
+  induction P11.
+  - destruct x. intros. inversion P21. reflexivity.
+    subst. inversion H.
+    assert (value (P x1 x2)).
+    apply nf_is_value; assumption.
+    inversion H.
+  - intros. apply IHP11. assumption.
+    inversion P21; subst.
+    destruct y2.
+    inversion H. assert (value (P y2_1 y2_2)).
+    apply nf_is_value. assumption.
+    inversion H0. assert (y = y0).
+    eapply step_deterministic. apply H. apply H0.
+    subst. apply H1. assumption.
+Qed.
+
 (** [] *)
 
 (** 确实，这个语言中还具备更强的性质（尽管不是所有语言都具备）：
@@ -956,7 +1070,13 @@ Lemma multistep_congr_2 : forall t1 t2 t2',
      t2 -->* t2' ->
      P t1 t2 -->* P t1 t2'.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction H0.
+  - apply multi_refl.
+  - apply multi_step with (P t1 y).
+    + apply ST_Plus2. assumption. assumption.
+    + assumption.
+Qed.
+
 (** [] *)
 
 (** 使用这些引理，证明的主体是直接进行归纳。
@@ -1051,7 +1171,19 @@ Theorem eval__multistep : forall t n,
     自反性，传递性，及其蕴含了 [-->]。 *)
 
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction H.
+  - apply multi_refl.
+  - eapply multi_trans.
+    + assert (P t1 t2 -->* P(C n1) t2).
+      apply multistep_congr_1. assumption.
+      apply H1.
+    + eapply multi_trans.
+      apply multistep_congr_2. apply v_const.
+      apply IHeval2.
+      (* econstructor; constructor. *)
+      apply multi_R. apply ST_PlusConstConst.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, advanced (eval__multistep_inf)  
@@ -1074,7 +1206,12 @@ Lemma step__eval : forall t t' n,
      t  ==> n.
 Proof.
   intros t t' n Hs. generalize dependent n.
-  (* 请在此处解答 *) Admitted.
+  induction Hs.
+  - intros. inversion H; subst. constructor. constructor. constructor.
+  - intros. inversion H; subst. constructor. apply IHHs. assumption. assumption.
+  - intros. inversion H; subst. inversion H0; subst. constructor. assumption. apply IHHs. assumption.
+Qed.
+
 (** [] *)
 
 (** 一旦正确地表述了小步归约蕴含了大步求值的事实，它会很容易被证明。
@@ -1088,7 +1225,22 @@ Proof.
 Theorem multistep__eval : forall t t',
   normal_form_of t t' -> exists n, t' = C n /\ t ==> n.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. unfold normal_form_of in H.
+  inversion H.
+  induction H0.
+  assert(value x).
+    apply nf_is_value. assumption.
+  inversion H0.
+  exists n. split; try reflexivity; try constructor.
+  assert(exists n : nat, z = C n /\ y ==> n).
+    apply IHmulti. split; assumption.
+    assumption.
+  inversion H3 as [n [H4 H5]]; clear H3.
+  exists n. split. assumption.
+  eapply step__eval. apply H0.
+  assumption.
+  Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -1103,7 +1255,15 @@ Proof.
 Theorem evalF_eval : forall t n,
   evalF t = n <-> t ==> n.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  split; intros. generalize dependent n.
+  induction t; intros. simpl in H. rewrite H. apply E_Const.
+  simpl in H. rewrite <- H. constructor.
+  apply IHt1. reflexivity.
+  apply IHt2. reflexivity.
+  induction H. constructor. simpl. subst.
+  reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** 练习：4 星, standard (combined_properties)  
@@ -1154,6 +1314,36 @@ Inductive step : tm -> tm -> Prop :=
 
     对于合并起来的语言，请形式化地证明或反驳这两个属性。
     （也即，陈述定理表达性质成立或不成立，并证明它们。） *)
+
+Theorem step_deterministic :
+  deterministic step.
+Proof.
+  intros x y z H. generalize dependent z.
+  induction H; intros.
+  inversion H; subst. reflexivity.
+  inversion H3.
+  inversion H4.
+  inversion H0; subst. inversion H.
+  replace t1'0 with t1'. reflexivity.
+  apply IHstep. assumption.
+  inversion H3; subst; inversion H.
+  inversion H1; subst. inversion H0.
+  inversion H; subst; inversion H5.
+  replace t2'0 with t2'. reflexivity.
+  apply IHstep. assumption.
+  inversion H; subst. reflexivity. inversion H4.
+  inversion H; subst. reflexivity. inversion H4.
+  inversion H0; subst. inversion H. inversion H.
+  replace t1'0 with t1'. reflexivity. apply IHstep.
+  assumption.
+Qed.
+
+Theorem strong_progress : forall t,
+    ~ value t /\ ~ (exists t', t --> t').
+Proof.
+  intros. unfold not. split.
+  intros. Admitted.
+
 
 (* 请在此处解答 *)
 

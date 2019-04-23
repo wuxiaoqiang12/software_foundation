@@ -372,7 +372,6 @@ Proof.
   omega.
   reflexivity.
 Qed.
-
 (** Moral of this story: When proving things about a program that uses
     boolean comparisons [(a <? b)], use [bdestruct].  Then use
     [omega].  Let's review that proof without all the comments. *)
@@ -532,8 +531,21 @@ Check app_assoc.
 Example permut_example: forall (a b: list nat),
   Permutation (5::6::a++b) ((5::b)++(6::a++[])).
 Proof.
- (* After you cancel the [5], then bring the [6] to the front... *)
-(* 请在此处解答 *) Admitted.
+  (* After you cancel the [5], then bring the [6] to the front... *)
+  intros.
+  Search (_++[]).
+  rewrite -> app_nil_r.
+  Search (_::_ = _ ++ _).
+  rewrite <- app_comm_cons.
+  apply perm_skip.
+  Search (Permutation (_++_) (_++_)).
+  Search (_::_ ++ _ = (_::_)++_).
+  rewrite -> app_comm_cons.
+  Search (_ ++ _ :: _).
+  remember (6 :: a) as aa.
+  apply Permutation_app_comm.
+Qed.
+
 (** [] *)
 
 (** **** 练习：1 星, standard (not_a_permutation)  
@@ -547,7 +559,13 @@ Check Permutation_length_1_inv.
 Example not_a_permutation:
   ~ Permutation [1;1] [1;2].
 Proof.
-(* 请在此处解答 *) Admitted.
+  unfold not.
+  intros.
+  Search ([_;_]).
+  apply Permutation_length_2 in H.
+  destruct H. inversion H. omega. destruct H. omega.
+Qed.
+
 (** [] *)
 
 (** Back to [maybe_swap].  We prove that it doesn't lose or gain
@@ -620,7 +638,12 @@ Theorem Forall_perm: forall {A} (f: A -> Prop) al bl,
   Permutation al bl ->
   Forall f al -> Forall f bl.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction H. constructor.
+  inversion H0. constructor. assumption. apply IHPermutation. assumption.
+  inversion H0. inversion H3. constructor. assumption. constructor. assumption. assumption.
+  apply IHPermutation2. apply IHPermutation1. assumption.
+Qed.
+
 (** [] *)
 
 

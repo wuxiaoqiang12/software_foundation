@@ -39,7 +39,7 @@ end.
    and making a list of the results. *)
 
 (* Uncomment this function, and try it.
-Fixpoint selsort l :=
+Fixpoi  nt selsort l :=
 match l with
 | i::r => let (j,r') := select i r
                in j :: selsort r'
@@ -119,14 +119,24 @@ Lemma select_perm: forall x l,
   let (y,r) := select x l in
    Permutation (x::l) (y::r).
 Proof.
+  intros x l.
+  revert x. induction l; intros; simpl in *.
+  constructor. constructor. 
+  bdestruct (x <=? a).
+  - destruct (select x l) eqn:?H.
+    Search (Permutation (_ :: _ :: _ ) (_ :: _ :: _)).
+    eapply perm_trans. apply perm_swap.
+    eapply perm_trans. 2 : apply perm_swap.
+    constructor. specialize (IHl x). rewrite H0 in IHl. assumption.
+  - destruct (select a l) eqn:?H.
+    eapply perm_trans. 2 : apply perm_swap.
+    constructor. specialize (IHl a). rewrite H0 in IHl. assumption.
+Qed.
 
 (** NOTE: If you wish, you may [Require Import Multiset] and use the  multiset
   method, along with the theorem [contents_perm].  If you do,
   you'll still leave the statement of this theorem unchanged. *)
 
-intros x l; revert x.
-induction l; intros; simpl in *.
-(* 请在此处解答 *) Admitted.
 (** [] *)
 
 (** **** 练习：3 星, standard (selection_sort_perm)  *)
@@ -138,12 +148,27 @@ Proof.
 (** NOTE: If you wish, you may [Require Import Multiset] and use the  multiset
   method, along with the theorem [same_contents_iff_perm]. *)
 
-(* 请在此处解答 *) Admitted.
+  intros. revert l H.
+  induction n; simpl; intros; destruct l; inv H.
+  constructor.
+  destruct (select n0 l) eqn:?H.
+  assert (H0 := select_perm n0 l).
+  rewrite H in H0.
+  eapply perm_trans; try eassumption.
+  constructor. apply IHn. clear -H0.
+  Search Permutation length.
+  apply Permutation_length in H0. simpl in H0.
+  Search (S _ = S _).
+  apply Nat.succ_inj in H0. auto.
+Qed.
 
 Theorem selection_sort_perm:
   forall l, Permutation l (selection_sort l).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. apply selsort_perm.
+  auto.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (select_smallest)  *)
@@ -155,7 +180,15 @@ Lemma select_smallest_aux:
 Proof.
 (* Hint: no induction needed in this lemma.
    Just use existing lemmas about select, along with [Forall_perm] *)
-(* 请在此处解答 *) Admitted.
+  intros.
+  assert(Forall(fun z => y <= z)(y :: bl)).
+  constructor; auto.
+  assert (H2 := select_perm x al).
+  rewrite H0 in H2.
+  apply Permutation_sym in H2.
+  assert (H3 := @Forall_perm _ _ _ _ H2 H1).
+  inv H3. auto.
+Qed.
 
 Theorem select_smallest:
   forall x al y bl, select x al = (y,bl) ->

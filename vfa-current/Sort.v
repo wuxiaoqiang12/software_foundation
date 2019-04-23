@@ -119,7 +119,20 @@ Search Permutation.
 
 Lemma insert_perm: forall x l, Permutation (x::l) (insert x l).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction l.
+  - (* nil *)
+    simpl. constructor. constructor.
+  - (* no nil *)
+    simpl. bdestruct (x <=? a).
+    + (* x <= a *)
+      constructor. constructor. apply Permutation_refl.
+    + (* x > a *)
+      Search (Permutation (_ :: _) (_ :: _)).
+      apply perm_trans with (a :: x :: l).
+      apply perm_swap.
+      constructor. assumption.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (sort_perm)  
@@ -128,7 +141,16 @@ Proof.
 
 Theorem sort_perm: forall l, Permutation l (sort l).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction l.
+  - (* nil *)
+    simpl. constructor.
+  - (* no nil *)
+    simpl. Search Permutation.
+    apply perm_trans with (a :: (sort l)).
+    constructor. assumption.
+    apply insert_perm.
+Qed.
+
 (** [] *)
 
 (** **** 练习：4 星, standard (insert_sorted)  
@@ -140,7 +162,20 @@ Proof.
 Lemma insert_sorted:
   forall a l, sorted l -> sorted (insert a l).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction H.
+  - simpl. constructor.
+  - simpl. bdestruct (a <=? x).
+    + constructor. assumption. constructor.
+    + constructor. omega. constructor.
+  - simpl. bdestruct (a <=? x).
+    + constructor. assumption. constructor. assumption. assumption.
+    + bdestruct (a <=? y).
+      * constructor. Search (_ > _ -> _ <= _). omega.
+        constructor. omega. assumption.
+      * constructor. omega. simpl in *. subst. bdestruct (a <=? y).
+        omega. assumption.
+Qed.
+
 (** [] *)
 
 (** **** 练习：2 星, standard (sort_sorted)  
@@ -149,7 +184,11 @@ Proof.
 
 Theorem sort_sorted: forall l, sorted (sort l).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction l.
+  - constructor.
+  - simpl. apply insert_sorted. assumption.
+Qed.
+
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -180,7 +219,12 @@ Lemma sorted_sorted': forall al, sorted al -> sorted' al.
     you may have to think about how to approach it, and try out
     one or two different ideas.*)
 
-(* 请在此处解答 *) Admitted.
+Proof.
+  intros. induction H;
+            try (unfold sorted'; simpl; intros; omega).
+  - Admitted.
+
+
 (** [] *)
 
 (** **** 练习：3 星, standard, optional (sorted'_sorted)  *)
@@ -190,7 +234,10 @@ Lemma sorted'_sorted: forall al, sorted' al -> sorted al.
     because [sorted'] is not an inductive predicate. *)
 
 Proof.
-(* 请在此处解答 *) Admitted.
+  induction al. intros. constructor.
+  unfold sorted'. intros. Search (sorted).
+Admitted.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -219,13 +266,18 @@ Lemma Forall_nth:
   forall {A: Type} (P: A -> Prop) d (al: list A),
      Forall P al <-> (forall i,  i < length al -> P (nth i al d)).
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros. induction al. split. intros. simpl in *. omega.
+  intros. simpl in H. auto. split. Abort.
+
+
 (** [] *)
 
 (** **** 练习：4 星, standard, optional (insert_sorted')  *)
 Lemma insert_sorted':
   forall a l, sorted' l -> sorted' (insert a l).
-(* 请在此处解答 *) Admitted.
+Proof.
+  Admitted.
+
 (** [] *)
 
 (** **** 练习：4 星, standard, optional (insert_sorted')  *)
