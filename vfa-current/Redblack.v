@@ -308,7 +308,7 @@ repeat  match goal with
 
 (** There's a pattern here.  Whenever we have a hypothesis above the line
     that looks like,
-    -  H: SearchTree' _ E _    
+    -  H: SearchTree' _ E _
     -  H: SearchTree' _ (T _ _ _ _ _) _
 
    we should invert it.   Let's build that idea into our proof automation.
@@ -382,8 +382,50 @@ Lemma ins_SearchTree:
                     SearchTree' lo s hi ->
                     SearchTree' lo (ins x vx s) hi.
 Proof.
-(* 请在此处解答 *) Admitted.
-(** [] *)
+  (* intros. inv H1. *)
+  (* - constructor. constructor. auto. constructor. omega. *)
+  (* - simpl. bdestruct (ltb x k). *)
+  (*   * apply balance_SearchTree. inv H2. inv H3. constructor. constructor. auto. constructor. omega. *)
+  (*     constructor. constructor. auto. constructor. omega. simpl. *)
+
+  (*     bdestruct (ltb x k0). apply balance_SearchTree. inv H4. inv H5. constructor. constructor. auto. *)
+  (*     constructor. omega. constructor. constructor. omega. constructor. omega. *)
+  (*     simpl. *)
+
+
+  intros. inv H1. simpl. constructor. constructor. auto.
+  constructor. omega.
+
+  repeat simpl;
+  repeat match goal with
+  | |- SearchTree' lo (if ?x then _ else _) _ => bdestruct x
+  end;
+  match goal with
+          | H: SearchTree' lo _ _   |- _  => inv H
+  end;
+  match goal with
+  | H: SearchTree' _ _ _    |- _  => inv H
+  end;
+  try match goal with
+      | |- SearchTree' lo (balance _ _ _ _ _) hi => apply balance_SearchTree
+      end;
+  try repeat match goal with
+             | |- SearchTree' lo (ins x vx _) _ => constructor
+             end;
+  try repeat match goal with
+             | |- SearchTree' lo E _ => try (constructor; auto)
+             end;
+  try repeat match goal with
+             | |- SearchTree' _ E _ => try (constructor; omega)
+             end;
+  try repeat match goal with
+             | |- SearchTree' _ E hi => try (constructor; auto)
+             end;
+  try (constructor; auto; auto).
+Admitted.
+
+
+  (** [] *)
 
 (** **** 练习：2 星, standard (valid)  *)
 

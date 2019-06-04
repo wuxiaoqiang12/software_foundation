@@ -102,8 +102,16 @@ Module TreeTable <: TABLE.
     Prove this using techniques similar to the proof of [gss] just above. *)
 
  Theorem gso: forall j k v t,  j<>k -> get j (set k v t) = get j t.
-   Proof. 
- (* 请在此处解答 *) Admitted.
+   Proof.
+     intros. unfold get, set.
+     destruct (unrealistically_strong_can_relate V default t) as [cts H1].
+     assert (H0 := insert_relate V default k v t cts H1).
+     assert (H2 := lookup_relate V default j _ _ H0).
+     rewrite H2. Search (t_update). rewrite t_update_neq.
+     2 : auto. Search (lookup). Search (_ = _ -> _ = _).
+     apply eq_sym. apply lookup_relate. auto.
+   Qed.
+
 (** [] *)
 End TreeTable.
 
@@ -188,7 +196,19 @@ Module TreeTable2 <: TABLE.
 
  Theorem gso: forall j k v t,  j<>k -> get j (set k v t) = get j t.
    Proof. 
- (* 请在此处解答 *) Admitted.
+     intros. unfold get, set.
+     unfold table in t.
+     destruct t as [a Ha].
+     simpl.
+     destruct (can_relate V default a Ha) as [cts H0].
+     Print insert_relate.
+     assert (H1 := insert_relate V default k v a cts H0).
+     Print lookup_relate.
+     pose proof (lookup_relate V default j _ _ H1).
+     rewrite H2. rewrite t_update_neq. 2 : auto.
+     apply eq_sym. apply lookup_relate. auto.
+   Qed.
+
 (** [] *)
 End TreeTable2.
 

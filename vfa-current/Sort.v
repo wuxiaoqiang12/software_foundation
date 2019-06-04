@@ -95,6 +95,9 @@ Inductive sorted: list nat -> Prop :=
 Definition sorted' (al: list nat) :=
  forall i j, i < j < length al -> nth i al 0 <= nth j al 0.
 
+Check nth.
+Print nth.
+
 (** This is a reasonable definition too.  It should be equivalent.
     Later on, we'll prove that the two definitions really are
     equivalent.  For now, let's use the first one to define what it
@@ -222,8 +225,35 @@ Lemma sorted_sorted': forall al, sorted al -> sorted' al.
 Proof.
   intros. induction H;
             try (unfold sorted'; simpl; intros; omega).
-  - Admitted.
-
+  - unfold sorted'. intros. inversion H1. induction H2.
+    + (* i < S i *)
+      simpl. induction i as [|i'].
+      * (* i = O *)
+        auto.
+      * unfold sorted' in IHsorted. simpl in H1.
+        assert (Hlt : i' < S i' < S (length l)).
+        { omega. }
+        assert (Hsi : nth i' (y :: l) 0 <= nth (S i') (y :: l) 0 ).
+        { auto. } auto.
+    + (* S i < j *)
+     assert (Hsk : nth m (x :: y :: l) 0 <= nth (S m) (x :: y :: l) 0 ).
+     { simpl. destruct m. { auto. } destruct m.
+       { unfold sorted' in IHsorted. simpl in H1.
+         assert (H00 : nth 0 (y :: l) 0 <= nth 1 (y :: l) 0).
+         {
+           apply IHsorted. simpl. omega.
+         }
+         simpl in H00. omega.
+       }
+       unfold sorted' in IHsorted. simpl in H1.
+       assert (Hsm : nth (S m) (y :: l) 0 <= nth (S (S m)) (y :: l) 0).
+       {
+         apply IHsorted. simpl. omega.
+       }
+       simpl in Hsm. auto.
+     }
+     eapply Nat.le_trans. apply IHle. split; omega. omega. omega.
+Qed.
 
 (** [] *)
 
@@ -234,8 +264,25 @@ Lemma sorted'_sorted: forall al, sorted' al -> sorted al.
     because [sorted'] is not an inductive predicate. *)
 
 Proof.
-  induction al. intros. constructor.
-  unfold sorted'. intros. Search (sorted).
+  intros al Hsort.
+  induction al as [|al'].
+  - constructor.
+  - induction IHal.
+    + unfold sorted' in Hsort. constructor.
+    + constructor. unfold sorted' in Hsort.
+      assert (H00 : nth 0 [al'; x] 0 <= nth 1 [al'; x] 0).
+      apply Hsort. simpl. omega. simpl in H00. auto.
+      constructor.
+    + unfold sorted' in Hsort. constructor.
+      assert (H01 : nth 0 (al' :: x :: y :: l) 0 <= nth 1 (al' :: x :: y ::l) 0).
+      { apply Hsort. simpl. omega. }
+      simpl in H01. auto.
+      constructor. auto. auto.
+    + unfold sorted' in Hsort. unfold sorted'.
+      intros. inversion H. induction H0.
+      * destruct i as [|i']. destruct al.
+        simpl. omega.
+        simpl. admit.
 Admitted.
 
 (** [] *)

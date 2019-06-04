@@ -638,10 +638,16 @@ Theorem Forall_perm: forall {A} (f: A -> Prop) al bl,
   Permutation al bl ->
   Forall f al -> Forall f bl.
 Proof.
-  intros. induction H. constructor.
-  inversion H0. constructor. assumption. apply IHPermutation. assumption.
-  inversion H0. inversion H3. constructor. assumption. constructor. assumption. assumption.
-  apply IHPermutation2. apply IHPermutation1. assumption.
+  intros A f al bl HPer Hf.
+  induction HPer; auto.
+  - inversion Hf; subst. constructor; auto.
+  - inversion Hf; subst; constructor; auto.
+    inversion H2; subst; auto. constructor; auto. inversion H2; subst; auto.
+
+  (* intros. induction H. constructor. *)
+  (* inversion H0. constructor. assumption. apply IHPermutation. assumption. *)
+  (* inversion H0. inversion H3. constructor. assumption. constructor. assumption. assumption. *)
+  (* apply IHPermutation2. apply IHPermutation1. assumption. *)
 Qed.
 
 (** [] *)

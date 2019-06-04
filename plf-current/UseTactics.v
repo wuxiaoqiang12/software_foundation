@@ -951,15 +951,16 @@ Proof with eauto.
     (* Exercise: replace the following [destruct] with a [lets]. *)
     (* old: destruct (typing_inversion_app _ _ _ _ Htypt)
               as [T1 [Htypt1 Htypt2]]. eapply T_App... *)
-    (* 请在此处解答 *) admit.
-
+    Check typing_inversion_app.
+    lets (T1&Htypt1&Htypt2): typing_inversion_app Htypt.
+    eapply T_App... (* apply IHt1. apply Htypt1. apply IHt2. apply Htypt2. *)
   - (* abs *)
     rename s into y. rename t into T1.
 
     (* Here is another example of using [lets]. *)
     (* old: destruct (typing_inversion_abs _ _ _ _ _ Htypt). *)
     (* new: *) lets (T2&Hsub&Htypt2): typing_inversion_abs Htypt.
-
+    Check T_Sub.
     (* An example of where [apply with] can be replaced with [applys]. *)
     (* old: apply T_Sub with (Arrow T1 T2)... *)
     (* new: *) applys T_Sub (Arrow T1 T2)...

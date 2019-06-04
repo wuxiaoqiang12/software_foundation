@@ -194,12 +194,16 @@ Theorem select_smallest:
   forall x al y bl, select x al = (y,bl) ->
      Forall (fun z => y <= z) bl.
 Proof.
-intros x al; revert x; induction al; intros; simpl in *.
- (* 请在此处解答 *) admit.
-bdestruct (x <=? a).
-*
-destruct (select x al) eqn:?H.
- (* 请在此处解答 *) Admitted.
+  intros x al; revert x; induction al; intros; simpl in *.
+  induction bl. auto.
+  Print Forall. constructor.
+  inversion H. inversion H.
+  bdestruct (x <=? a).
+  *
+    destruct (select x al) eqn:?H.
+    specialize (IHal x y ). rewrite H1 in IHal. apply IHal.
+    rewrite <- H.
+Admitted.
 (** [] *)
 
 (** **** 练习：3 星, standard (selection_sort_sorted)  *)
@@ -210,16 +214,36 @@ Lemma selection_sort_sorted_aux:
    sorted (y :: selsort bl (length bl)).
 Proof.
  (* Hint: no induction needed.  Use lemmas selsort_perm and Forall_perm.*)
- (* 请在此处解答 *) Admitted.
+  intros.
+  remember (selsort bl (length bl)) as al.
+  assert (H1 : Permutation bl al).
+  {
+    rewrite Heqal. apply selsort_perm. auto.
+  }
+  assert (H3 := @Forall_perm _ _ _ _ H1 H0).
+  inversion H3. constructor. constructor.
+  auto. rewrite -> H5. auto.
+Qed.
 
 Theorem selection_sort_sorted: forall al, sorted (selection_sort al).
 Proof.
-intros.
-unfold selection_sort.
+  intros.
+  unfold selection_sort.
 (* Hint: do induction on the [length] of al.
     In the inductive case, use [select_smallest], [select_perm],
     and [selection_sort_sorted_aux]. *)
- (* 请在此处解答 *) Admitted.
+  induction (length al) eqn:?H.
+  - simpl. induction al. constructor. constructor.
+  - Search (sorted). rewrite <- H.
+    remember (selsort al (length al)) as bl.
+    assert (H1 : Permutation bl al).
+    {
+      rewrite Heqbl. apply Permutation_sym. apply selsort_perm. auto.
+    }
+    Search (Permutation). Admitted.
+
+
+
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -277,7 +301,11 @@ Proof.
   recursion equation [selsort'_equation] that is automatically
   defined by the [Function] command. *)
 
-(* 请在此处解答 *) Admitted.
+  induction n. intros. induction l. constructor.
+  assert (H1 : selsort' (a :: l) = a :: selsort'(l)). admit.
+  rewrite H1. constructor. apply IHl. 
+  Admitted.
+
 (** [] *)
 
 Eval compute in selsort' [3;1;4;1;5;9;2;6;5].

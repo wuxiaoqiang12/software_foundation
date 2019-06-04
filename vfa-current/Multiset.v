@@ -56,7 +56,7 @@ Qed.
 Lemma union_comm: forall a b : multiset,  (* comm stands for "commutative" *)
    union a b = union b a.
 Proof.
-  intros. unfold union. extensionality x.
+  intros. extensionality x. unfold union.
   apply Nat.add_comm.
 Qed.
 
@@ -216,7 +216,17 @@ Proof.
   simpl. unfold empty, multiset_delete.
   bdestruct (x =? v); auto.
   simpl. bdestruct (a =? v).
-  unfold union. Admitted.
+  subst. unfold multiset_delete. bdestruct (x =? v).
+  subst. unfold union. unfold singleton. bdestruct (v =? v). simpl. auto.
+  simpl. omega. unfold union. unfold singleton. bdestruct (x =? v). omega.
+  auto.
+  simpl. unfold multiset_delete. bdestruct (x =? v).
+  subst. unfold union. unfold singleton. bdestruct (v =? a). omega.
+  simpl. rewrite IHal. unfold multiset_delete. bdestruct (v =? v).
+  auto. omega. unfold union. Search (_ + _ = _ + _).
+  rewrite Nat.add_cancel_l. rewrite IHal. unfold multiset_delete. bdestruct (x =? v). omega.
+  auto.
+Qed.
 
 (** [] *)
 
@@ -224,8 +234,9 @@ Proof.
 Lemma contents_perm_aux:
  forall v b, empty = union (singleton v) b -> False.
 Proof.
-  intros. Admitted.
+  intros v b contra. 
 
+Admitted.
 
 (** [] *)
 
@@ -233,10 +244,16 @@ Proof.
 Lemma contents_in:
   forall (a: value) (bl: list value) , contents bl a > 0 -> In a bl.
 Proof.
-  intros. induction bl. inversion H. simpl.
-  right. apply IHbl. Admitted.
-  
-
+  intros a bl. induction bl.
+  - (* bl is empty *)
+    simpl. intros. inversion H.
+  - (* bl is not empty *)
+    simpl. unfold union, singleton. bdestruct (a =? a0).
+    + (* a = a0 *)
+      simpl. intros. left. auto.
+    + (* a <> a0 *)
+      simpl. intros. right. auto.
+Qed.
 
 (** [] *)
 
@@ -245,10 +262,20 @@ Lemma in_perm_delete:
   forall a bl,
   In a bl -> Permutation (a :: list_delete bl a) bl.
 Proof.
-  intros. induction bl. simpl. inversion H.
-  simpl. destruct (a0 =? a). 
+  intros a bl. induction bl.
+  - simpl. intros. inversion H.
+  - simpl. intros [H1 | H2].
+    + bdestruct (a0 =? a).
+      * subst. auto.
+      * omega.
+    + bdestruct (a0 =? a).
+      * subst. auto.
+      * Search (Permutation).
+        apply perm_trans with (a0 :: a :: list_delete bl a).
+        Search (Permutation). apply perm_swap.
+        constructor. apply IHbl. auto.
+Qed.
 
-(* 请在此处解答 *) Admitted.
 (** [] *)
 
 (** **** 练习：4 星, standard (contents_perm)  *)
@@ -271,7 +298,24 @@ Proof.
      you'll need to unfold the definitions of
      [multiset_delete], [union], [singleton]. *)
 
-  (* 请在此处解答 *) Admitted.
+  assert (H1 : Permutation (a :: al) (a :: list_delete cl a)).
+  { constructor. apply IHal. rewrite delete_contents.
+    extensionality x.
+    unfold multiset_delete. bdestruct (x =? a).
+    + rewrite <- H. simpl.
+      unfold union, singleton. bdestruct (x =? a). simpl. auto.
+      omega.
+    + rewrite <- H. simpl. unfold union, singleton. bdestruct (x =? a).
+      omega. simpl. auto.
+  }
+  eapply perm_trans. apply H1.
+  apply in_perm_delete.
+  assert (H2 : contents (a :: al) a > 0).
+  { simpl. unfold union, singleton. bdestruct (a =? a). omega. omega. }
+  apply contents_in.
+  rewrite <- H. auto.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)

@@ -356,8 +356,12 @@ Lemma typing_example_2 :
             (rcons i2 (abs a B (var a))
              trnil))) \in
     (Arrow B B).
-Proof.
-  (* 请在此处解答 *) Admitted.
+Proof with eauto.
+  econstructor... econstructor...
+  econstructor... apply T_Var.
+  unfold update. unfold t_update... simpl... eauto.
+  unfold Tlookup... econstructor...
+Qed.
 
 Example typing_nonexample :
   ~ exists T,
@@ -366,7 +370,10 @@ Example typing_nonexample :
                (rcons i1 (abs a B (var a)) (var a)) \in
                T.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros contra. inversion contra.
+  inversion H; subst.
+  inversion H8.
+Qed.
 
 Example typing_nonexample_2 : forall y,
   ~ exists T,
@@ -376,7 +383,13 @@ Example typing_nonexample_2 : forall y,
                    (rcons i1 (var y) (rcons i2 (var y) trnil))) \in
            T.
 Proof.
-  (* 请在此处解答 *) Admitted.
+  intros y contra.
+  inversion contra; clear contra; inversion H; clear H; subst.
+  inversion H3; subst; clear H3... inversion H8; subst; clear H8...
+  inversion H3; subst... unfold update in H0. unfold t_update in H0. simpl in H0.
+  inversion H0; subst; clear H0. inversion H5; subst; clear H5.
+  inversion H11; subst; clear H11.
+Qed.
 
 (* ================================================================= *)
 (** ** 定型的性质 *)

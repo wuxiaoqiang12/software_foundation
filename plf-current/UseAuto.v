@@ -484,7 +484,7 @@ Lemma working_of_auto_1 : forall (P : nat->Prop),
   (* Hypothesis H3: *) (forall k, P (k+1) -> P k) ->
   (* Goal:          *) (P 2).
 (* Uncomment "debug" in the following line to see the debug trace: *)
-Proof. intros P H1 H2 H3. (* debug *) eauto. Qed.
+Proof. intros P H1 H2 H3. (* debug *)debug eauto. Qed.
 
 (** The output message produced by [debug eauto] is as follows.
 
@@ -510,7 +510,7 @@ Lemma working_of_auto_2 : forall (P : nat->Prop),
   (* Hypothesis H3: *) (forall k, P (k+1) -> P k) ->
   (* Hypothesis H2: *) (forall k, P (k-1) -> P k) ->
   (* Goal:          *) (P 2).
-Proof. intros P H1 H3 H2. (* debug *) eauto. Qed.
+Proof. intros P H1 H3 H2. (* debug *)debug eauto. Qed.
 
 (** This time, the output message suggests that the proof search
     investigates many possibilities. If we print the proof term:
@@ -729,8 +729,6 @@ Theorem ceval_deterministic': forall c st st1 st2,
   st =[ c ]=> st2 ->
   st1 = st2.
 Proof.
-  (* 请在此处解答 *) admit.
-Admitted.
 
 (** In fact, using automation is not just a matter of calling [auto]
     in place of one or two other tactics. Using automation is about
@@ -877,8 +875,18 @@ Theorem preservation' : forall t t' T,
   t --> t'  ->
   has_type empty t' T.
 Proof.
-  (* 请在此处解答 *) admit.
-Admitted.
+  remember (@empty ty) as Gamma.
+  introv HT. gen t'.
+  induction HT; introv HE; subst Gamma.
+  - inverts HE.
+  - inverts HE.
+  - inverts HE; subst *. sort.
+    + apply substitution_preserves_typing with T11; auto.
+      inverts* HT1.
+  - inverts HE.
+  - inverts HE.
+  - inverts* HE. 
+Qed.
 
 (* ================================================================= *)
 (** ** Progress for STLC *)
@@ -919,8 +927,16 @@ Theorem progress' : forall t T,
   has_type empty t T ->
   value t \/ exists t', t --> t'.
 Proof.
-  (* 请在此处解答 *) admit.
-Admitted.
+  introv Ht.
+  remember (@empty ty) as Gamma.
+  induction Ht; subst Gamma; auto.
+  - inverts H.
+  - right. destruct* IHHt1.
+    + destruct* IHHt2.
+      inverts* H; subst; try solve_by_invert.
+  - right. destruct* IHHt1.
+    destruct* t1; try solve_by_invert.
+Qed.
 
 End PreservationProgressStlc.
 
@@ -962,8 +978,9 @@ Qed.
 Theorem multistep_eval_ind : forall t v,
   t -->* v -> forall n, C n = v -> t ==> n.
 Proof.
-  (* 请在此处解答 *) admit.
-Admitted.
+  introv Hm Hn.
+  induction Hm. inverts Hn. apply* E_Const.
+  apply* step__eval. Qed.
 
 (** Exercise: using the lemma above, simplify the proof of
     the result [multistep__eval]. You should use the tactics
@@ -973,8 +990,10 @@ Admitted.
 Theorem multistep__eval' : forall t v,
   normal_form_of t v -> exists n, v = C n /\ t ==> n.
 Proof.
-  (* 请在此处解答 *) admit.
-Admitted.
+  introv Hnorm. unfold normal_form_of in Hnorm.
+  inverts Hnorm. rewrite nf_same_as_value in H0. inverts H0.
+  exists n. splits* . apply* multistep_eval_ind.
+Qed.
 
 (** If we try to combine the two proofs into a single one,
     we will likely fail, because of a limitation of the
@@ -993,9 +1012,16 @@ Admitted.
 
 Theorem multistep__eval'' : forall t v,
   normal_form_of t v -> exists n, v = C n /\ t ==> n.
-Proof.
-  (* 请在此处解答 *) admit.
-Admitted.
+Proof. intros t v Hnorm.
+  unfold normal_form_of in Hnorm.
+  inversion Hnorm as [Hs Hnf]; clear Hnorm.
+  rewrite nf_same_as_value in Hnf. inversion Hnf. clear Hnf.
+  exists n. split. reflexivity.
+  induction Hs; subst.
+  introv Hnorm. unfold normal_form_of in Hnorm.
+  inverts Hnorm. rewrite nf_same_as_value in H0. inverts* H0.
+  exists n. splits*. dependent induction H. constructor.
+
 
 End Semantics.
 

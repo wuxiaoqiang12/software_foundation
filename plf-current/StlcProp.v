@@ -644,7 +644,12 @@ Proof.
   intros t t' T Hhas_type Hmulti. unfold stuck.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
   induction Hmulti.
-  (* 请在此处解答 *) Admitted.
+  assert ((value x0) \/ (exists t' : tm, x0 --> t')).
+  eapply progress. apply Hhas_type.
+  inversion H; auto. apply IHHmulti. eapply preservation. eassumption. auto.
+  auto. auto.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -659,8 +664,14 @@ Theorem unique_types : forall Gamma e T T',
   Gamma |- e \in T ->
   Gamma |- e \in T' ->
   T = T'.
-Proof.
-  (* 请在此处解答 *) Admitted.
+Proof with eauto.
+  induction e; intros T T' HT HT'; inversion HT; inversion HT'; subst...
+  rewrite H1 in H5. inversion H5. auto.
+  assert (T0 = T11)... subst.
+  assert (Arrow T11 T = Arrow T11 T')...
+  inversion H...
+  assert (T12 = T1). Abort.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -696,11 +707,11 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(*  determinism becomes false, trivial *)
       - Progress
-(* 请在此处解答 *)
+(*  progress remains true *)
       - Preservation
-(* 请在此处解答 *)
+(*  preservation becomes false, trivial *)
 *)
 
 (* 请勿修改下面这一行： *)
@@ -724,11 +735,11 @@ Definition manual_grade_for_stlc_variation1 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(* 请在此处解答 *)  false
       - Progress
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
       - Preservation
-(* 请在此处解答 *)
+(* 请在此处解答 *)  false
 *)
 
 (* 请勿修改下面这一行： *)
@@ -744,11 +755,11 @@ Definition manual_grade_for_stlc_variation2 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
       - Progress
-(* 请在此处解答 *)
+(* 请在此处解答 *)  false
       - Preservation
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
 *)
 
 (* 请勿修改下面这一行： *)
@@ -769,11 +780,11 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(* 请在此处解答 *) false
       - Progress
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
       - Preservation
-(* 请在此处解答 *)
+(* 请在此处解答 *)  false
 
     [] *)
 
@@ -793,11 +804,11 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(* 请在此处解答 *) true
       - Progress
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
       - Preservation
-(* 请在此处解答 *)
+(* 请在此处解答 *)  false
 
     [] *)
 
@@ -817,11 +828,11 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(* 请在此处解答 *) true
       - Progress
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
       - Preservation
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
 
     [] *)
 
@@ -839,11 +850,11 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* 请在此处解答 *)
+(* 请在此处解答 *) true
       - Progress
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
       - Preservation
-(* 请在此处解答 *)
+(* 请在此处解答 *)  true
 
     [] *)
 
@@ -918,6 +929,119 @@ Inductive tm : Type :=
         accepts the whole file. *)
 
 (* 请在此处解答 *)
+
+Inductive value : tm -> Prop :=
+  | v_abs : forall x T t,
+      value (abs x T t)
+  | v_nat : forall x,
+      value (const x).
+
+Check value.
+
+Hint Constructors value.
+
+Reserved Notation "'[' x ':=' s ']' t" (at level 20).
+Fixpoint subst (x : string) (s : tm) (t : tm) : tm :=
+  match t with
+  | var x' =>
+      if eqb_string x x' then s else t
+  | abs x' T t1 =>
+      abs x' T (if eqb_string x x' then t1 else ([x:=s] t1))
+  | app t1 t2 =>
+      app ([x:=s] t1) ([x:=s] t2)
+  | const x' =>
+      const x'
+  | scc x' =>
+      scc ([x:=s] x')
+  | prd x' =>
+      prd ([x:=s] x')
+  | mlt t1 t2 =>
+      mlt ([x:=s] t1) ([x:=s] t2)
+  | test0 t1 t2 t3 =>
+      test0 ([x:=s] t1) ([x:=s] t2) ([x:=s] t3)
+  end
+
+where "'[' x ':=' s ']' t" := (subst x s t).
+
+Reserved Notation "t1 '-->' t2" (at level 40).
+Inductive step : tm -> tm -> Prop :=
+  | ST_AppAbs : forall x T t12 v2,
+         value v2 ->
+         (app (abs x T t12) v2) --> [x:=v2]t12
+  | ST_App1 : forall t1 t1' t2,
+         t1 --> t1' ->
+         app t1 t2 --> app t1' t2
+  | ST_App2 : forall v1 t2 t2',
+         value v1 ->
+         t2 --> t2' ->
+         app v1 t2 --> app v1 t2'
+  | ST_Test0 : forall t1 t2,
+      (test0 (const 0) t1 t2) --> t1
+  | ST_TestN0 : forall x t1 t2,
+      x <> 0 ->
+      (test0 (const x) t1 t2) --> t2
+  | ST_Test : forall t1 t1' t2 t3,
+      t1 --> t1' ->
+      (test0 t1 t2 t3) --> (test0 t1' t2 t3)
+  | ST_SccConst : forall x,
+      scc (const x) --> const (S x)
+  | ST_Scc : forall t1 t2,
+      t1 --> t2 ->
+      scc t1 --> scc t2
+  | ST_PrdConst : forall x,
+      prd (const x) --> const (pred x)
+  | ST_Prd : forall t1 t2,
+      t1 --> t2 ->
+      prd t1 --> prd t2
+  | ST_MltConstConst : forall x1 x2,
+      mlt (const x1) (const x2) --> const (x1 * x2)
+  | ST_MltConst : forall v t1 t2,
+      value v ->
+      t1 --> t2 ->
+      mlt v t1 --> mlt v t2
+  | ST_Mlt : forall t1 t2 t3,
+      t1 --> t2 ->
+      mlt t1 t3 --> mlt t2 t3
+
+where "t1 '-->' t2" := (step t1 t2).
+Hint Constructors step.
+
+Notation multistep := (multi step).
+Notation "t1 '==>*' t2" := (multistep t1 t2) (at level 40).
+
+(*
+Reserved Notation "Gamma '|-' t '\in' T" (at level 40).
+Inductive has_type : context -> tm -> ty -> Prop :=
+| T_Var : forall Gamma x T,
+      Gamma x = Some T ->
+      Gamma |- var x \in T
+  | T_Abs : forall Gamma x T11 T12 t12,
+      (x |-> T11; Gamma) |- t12 \in T12 ->
+      Gamma |- abs x T11 t12 \in Arrow T11 T12
+  | T_App : forall T11 T12 Gamma t1 t2,
+      Gamma |- t1 \in Arrow T11 T12 ->
+      Gamma |- t2 \in T11 ->
+      Gamma |- app t1 t2 \in T12
+  | T_Const : forall Gamma,
+      Gamma |- const \in Nat
+  | T_Scc : forall Gamma t,
+      Gamma |- t \in Nat ->
+      Gamma |- scc t \in Nat
+  | T_Prd : forall Gamma t,
+      Gamma |- t \in Nat ->
+      Gamma |- prd t \in Nat
+  | T_Mlt : forall Gamma t1 t2,
+      Gamma |- t1 \in Nat ->
+      Gamma |- t2 \in Nat ->
+      Gamma |- mlt t1 t2 \in Nat
+  | T_Test : forall t1 t2 t3 T Gamma,
+      Gamma |- t1 \in Nat ->
+      Gamma |- t2 \in T ->
+      Gamma |- t3 \in T ->
+      Gamma |- test t1 t2 t3 \in T
+
+where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
+Hint Constructors has_type. *)
 
 (* 请勿修改下面这一行： *)
 Definition manual_grade_for_stlc_arith : option (nat*string) := None.

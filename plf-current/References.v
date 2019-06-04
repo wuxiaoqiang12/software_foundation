@@ -382,7 +382,11 @@ Definition tseq t1 t2 :=
 
 (** **** 练习：1 星, standard, optional (store_draw)  
 
-    Draw (on paper) the contents of the store at the point in
+    Dr
+
+
+
+aw (on paper) the contents of the store at the point in
     execution where the first two [let]s have finished and the third
     one is about to begin. *)
 

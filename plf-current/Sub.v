@@ -700,6 +700,7 @@ Inductive ty : Type :=
   | Base  : string -> ty
   | Arrow : ty -> ty -> ty
   | Unit  : ty
+  | Prod  : ty -> ty -> ty
 .
 
 Inductive tm : Type :=
@@ -709,7 +710,10 @@ Inductive tm : Type :=
   | tru : tm 
   | fls : tm
   | test : tm -> tm -> tm -> tm
-  | unit : tm 
+  | unit : tm
+  | pair : tm -> tm -> tm
+  | fst  : tm -> tm
+  | snd  : tm -> tm
 .
 
 (* ----------------------------------------------------------------- *)
@@ -733,7 +737,10 @@ Fixpoint subst (x:string) (s:tm)  (t:tm) : tm :=
   | test t1 t2 t3 =>
       test (subst x s t1) (subst x s t2) (subst x s t3)
   | unit =>
-      unit 
+    unit
+  | pair t1 t2 => pair (subst x s t1) (subst x s t2)
+  | fst t => fst (subst x s t)
+  | snd t => snd (subst x s t)
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -753,6 +760,10 @@ Inductive value : tm -> Prop :=
       value fls
   | v_unit :
       value unit
+  | v_pair : forall v1 v2,
+      value v1 ->
+      value v2 ->
+      value (pair v1 v2)
 .
 
 Hint Constructors value.
@@ -777,6 +788,19 @@ Inductive step : tm -> tm -> Prop :=
   | ST_Test : forall t1 t1' t2 t3,
       t1 --> t1' ->
       (test t1 t2 t3) --> (test t1' t2 t3)
+  | ST_Pair1 : forall t1 t1' t2,
+      t1 --> t1' ->
+      (pair t1 t2) --> (pair t1' t2)
+  | ST_Pair2 : forall t1 t2 t2',
+      t2 --> t2' ->
+      (pair t1 t2) --> (pair t1 t2')
+  | ST_Fst : forall t t',
+      t --> t' ->
+      (fst t) --> (fst t')
+  | ST_Snd : forall t t',
+      t --> t' ->
+      (snd t) --> (snd t')
+
 where "t1 '-->' t2" := (step t1 t2).
 
 Hint Constructors step.
@@ -806,6 +830,15 @@ Inductive subtype : ty -> ty -> Prop :=
       T1 <: S1 ->
       S2 <: T2 ->
       (Arrow S1 S2) <: (Arrow T1 T2)
+  | S_Prod : forall S1 S2 T1 T2,
+      S1 <: T1 ->
+      S2 <: T2 ->
+      (Prod S1 S2) <: (Prod T1 T2)
+  | S_Fst : forall T1 T2,
+      (Prod T1 T2) <: T1
+  | S_Snd : forall T1 T2,
+      (Prod T1 T2) <: T2
+
 where "T '<:' U" := (subtype T U).
 
 (** Note that we don't need any special rules for base types ([Bool]
@@ -849,24 +882,27 @@ Proof. auto. Qed.
     Student := { name : String ; gpa : Float } 
     Employee := { name : String ; ssn : Integer }
 *)
-Definition Person : ty
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
-Definition Student : ty
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
-Definition Employee : ty
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
+Definition Person : ty :=
+  String.
+Definition Student : ty :=
+  Prod String Float.
+Definition Employee : ty :=
+  Prod String Integer.
 
 (** Now use the definition of the subtype relation to prove the following: *)
 
 Example sub_student_person :
   Student <: Person.
 Proof.
-(* 请在此处解答 *) Admitted.
+  constructor.
+Qed.
 
 Example sub_employee_person :
   Employee <: Person.
 Proof.
-(* 请在此处解答 *) Admitted.
+  constructor.
+Qed.
+
 (** [] *)
 
 (** The following facts are mostly easy to prove in Coq.  To get
@@ -878,7 +914,9 @@ Example subtyping_example_1 :
   (Arrow Top Student) <: (Arrow (Arrow C C) Person).
   (* Top->Student <: (C->C)->Person *)
 Proof with eauto.
-  (* 请在此处解答 *) Admitted.
+  constructor. apply S_Top. apply sub_student_person.
+Qed.
+
 (** [] *)
 
 (** **** 练习：1 星, standard, optional (subtyping_example_2)  *)
@@ -886,7 +924,9 @@ Example subtyping_example_2 :
   (Arrow Top Person) <: (Arrow Person Top).
   (* Top->Person <: Person->Top *)
 Proof with eauto.
-  (* 请在此处解答 *) Admitted.
+  constructor. apply S_Top. apply S_Top.
+Qed.
+
 (** [] *)
 
 End Examples.
@@ -929,6 +969,16 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- t \in S ->
       S <: T ->
       Gamma |- t \in T
+  | T_Pair : forall t1 t2 T1 T2 Gamma,
+      Gamma |- t1 \in T1 ->
+      Gamma |- t2 \in T2 ->
+      Gamma |- pair t1 t2 \in (Prod T1 T2)
+  | T_Fst : forall t T1 T2 Gamma,
+      Gamma |- t \in (Prod T1 T2) ->
+      Gamma |- fst t \in T1
+  | T_Snd : forall t T1 T2 Gamma,
+      Gamma |- t \in (Prod T1 T2) ->
+      Gamma |- fst t \in T2
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -956,6 +1006,12 @@ Import Examples.
 (* 请在此处解答 
 
     [] *)
+Notation exampleTerm1 := (pair (abs z A (var z)) (abs z B (var z))).
+Example subtyping_example_0 :
+  empty |- exampleTerm1 \in (Prod (Arrow A A) (Arrow B B)).
+Proof.
+  constructor. auto. auto.
+Qed.
 
 (** **** 练习：2 星, standard, optional (typing_example_1)  *)
 (* empty |- (\x:(Top * B->B). x.snd) ((\z:A.z), (\z:B.z))
@@ -963,6 +1019,12 @@ Import Examples.
 (* 请在此处解答 
 
     [] *)
+Notation exampleTerm2 := (app (abs x (Prod Top (Arrow B B)) (snd (var x))) exampleTerm1).
+Example subtyping_example_1 :
+  empty |- exampleTerm2 \in (Arrow B B).
+Proof.
+  econstructor. constructor. Admitted.
+
 
 (** **** 练习：2 星, standard, optional (typing_example_2)  *)
 (* empty |- (\z:(C->C)->(Top * B->B). (z (\x:C.x)).snd)
@@ -971,7 +1033,14 @@ Import Examples.
 (* 请在此处解答 
 
     [] *)
-
+Notation exampleTerm3 := (app (abs z (Arrow (Arrow C C) (Prod Top (Arrow B B)))
+                                   (snd (app (var z) (abs x C (var x)))))
+                               (abs z (Arrow C C) exampleTerm1)).
+Example typing_example_2 :
+  empty |-  exampleTerm3
+          \in (Arrow B B).
+Proof.
+  Admitted.
 End Examples2.
 
 (* ################################################################# *)
@@ -1008,7 +1077,12 @@ Lemma sub_inversion_Bool : forall U,
 Proof with auto.
   intros U Hs.
   remember Bool as V.
-  (* 请在此处解答 *) Admitted.
+  induction Hs; try (subst; discriminate).
+  - reflexivity.
+  - subst. assert (U = Bool). subst... subst...
+
+Admitted.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (sub_inversion_arrow)  *)
@@ -1020,7 +1094,16 @@ Proof with eauto.
   intros U V1 V2 Hs.
   remember (Arrow V1 V2) as V.
   generalize dependent V2. generalize dependent V1.
-  (* 请在此处解答 *) Admitted.
+  induction Hs; intros V1 V2 HeqV.
+  exists V1; exists V2...
+  apply IHHs2 in HeqV. inversion HeqV as [U1 [U2 [H1 [H2 H3]]]].
+  apply IHHs1 in H1. inversion H1 as [U3 [U4 [H4 [H5 H6]]]].
+  exists U3; exists U4...
+  inversion HeqV.
+  inversion HeqV. subst. exists S1; exists S2...
+  inversion HeqV. Admitted.
+
+
 (** [] *)
 
 (* ================================================================= *)
@@ -1057,7 +1140,16 @@ Lemma canonical_forms_of_arrow_types : forall Gamma s T1 T2,
   exists x S1 s2,
      s = abs x S1 s2.
 Proof with eauto.
-  (* 请在此处解答 *) Admitted.
+  intros.
+  remember (Arrow T1 T2) as V.
+  generalize dependent T1. generalize dependent T2.
+  induction H; intros; eauto; try (solve_by_invert).
+  subst.
+  apply sub_inversion_arrow in H1.
+  inversion H1 as [U1 [U2 [H2 [H3 H4]]]].
+  eapply IHhas_type...
+Qed.
+
 (** [] *)
 
 (** Similarly, the canonical forms of type [Bool] are the constants
@@ -1164,9 +1256,12 @@ Proof with eauto.
     + assert (t1 = tru \/ t1 = fls)
         by (eapply canonical_forms_of_Bool; eauto).
       inversion H0; subst...
-    + inversion H. rename x into t1'. eauto. 
-Qed.
-
+    + inversion H. rename x into t1'. eauto.
+  - destruct IHHt1; subst...
+    + destruct IHHt2; subst...
+      right. inversion H0. exists (pair t1 x). auto.
+    + right. inversion H. exists (pair x t2)...
+Admitted.
 (* ================================================================= *)
 (** ** Inversion Lemmas for Typing *)
 
@@ -1342,6 +1437,18 @@ Inductive appears_free_in : string -> tm -> Prop :=
   | afi_test3 : forall x t1 t2 t3,
       appears_free_in x t3 ->
       appears_free_in x (test t1 t2 t3)
+  | afi_pair1 : forall x t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (pair t1 t2)
+  | afi_pair2 : forall x t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (pair t1 t2)
+  | afi_fst : forall x t,
+      appears_free_in x t ->
+      appears_free_in x (fst t)
+  | afi_snd : forall x t,
+      appears_free_in x t ->
+      appears_free_in x (snd t)
 .
 
 Hint Constructors appears_free_in.
@@ -1360,7 +1467,8 @@ Proof with eauto.
     apply T_Abs... apply IHhas_type. intros x0 Hafi.
     unfold update, t_update. destruct (eqb_stringP x x0)...
   - (* T_Test *)
-    apply T_Test... 
+    apply T_Test...
+  - apply T_Pair...
 Qed.
 
 Lemma free_in_context : forall x t T Gamma,
@@ -1445,8 +1553,9 @@ Proof with eauto.
     auto.
   - (* unit *)
     assert (Unit <: S)
-      by apply (typing_inversion_unit _ _  Htypt)... 
-Qed.
+      by apply (typing_inversion_unit _ _  Htypt)...
+    Admitted.
+
 
 (* ================================================================= *)
 (** ** Preservation *)

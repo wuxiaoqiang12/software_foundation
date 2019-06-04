@@ -276,9 +276,10 @@ Definition example_tree (v2 v4 v5 : V) :=
 (* Fill in the definition of example_map with a total_map that
   you think example_tree should correspond to.  Use
   [t_update] and [(t_empty default)]. *)
+Search total_map.
+Definition example_map (v2 v4 v5: V) : total_map V :=
+  t_update (t_update (t_update (t_empty default) 2 v2) 4 v4) 5 v5.
 
-Definition example_map (v2 v4 v5: V) : total_map V
-  (* 将本行替换成 ":= _你的_定义_ ." *). Admitted.
 (** [] *)
 
 (** To build the [Abs] relation, we'll use these two auxiliary
@@ -306,12 +307,12 @@ Inductive Abs:  tree -> total_map V -> Prop :=
 Lemma check_example_map:
   forall v2 v4 v5, Abs (example_tree v2 v4 v5) (example_map v2 v4 v5).
 Proof.
-intros.
-unfold example_tree.
-evar (m: total_map V).
-replace (example_map v2 v4 v5) with m; subst m.
-repeat constructor.
-extensionality x.
+  intros.
+  unfold example_tree.
+  evar (m: total_map V).
+  replace (example_map v2 v4 v5) with m; subst m. 
+  repeat constructor.
+  extensionality x.
 (* HINT:
   First,    [unfold example_map, t_update, combine, t_empty, eqb_id.]
   Then, repeat the following procedure:  If you see something like
@@ -320,19 +321,34 @@ extensionality x.
   If you're too lazy to check for yourself whether they are true,
    use [bdestruct (4 =? x); try omega].
 *)
-(* 请在此处解答 *) Admitted.
+  unfold example_map, t_update, combine, t_empty.
+  bdestruct (4 =? x).
+  - bdestruct (5 =? x).
+    + omega.
+    + auto.
+  - bdestruct (x <? 4).
+    + bdestruct (2 =? x).
+      * bdestruct (5 =? x). omega. auto.
+      * bdestruct (x <? 2). bdestruct (5 =? x). omega. auto.
+        bdestruct (5 =? x). omega. auto.
+    + bdestruct (5 =? x).
+      * auto.
+      * bdestruct (x <? 5). bdestruct (2 =? x). omega. auto.
+        bdestruct (2 =? x). omega. auto.
+Qed.
+
 (** [] *)
 
 (** You can ignore this lemma, unless it fails. *)
 Lemma check_too_clever: forall v2 v4 v5: V, True.
 Proof.
-intros.
-evar (m: total_map V).
-assert (Abs (example_tree v2 v4 v5) m).
-repeat constructor.
-(change m with (example_map v2 v4 v5) in H || auto);
-(* auto; *)
-fail "Did you use copy-and-paste, from your check_example_map proof,
+  intros.
+  evar (m: total_map V).
+  assert (Abs (example_tree v2 v4 v5) m).
+  repeat constructor.
+  (change m with (example_map v2 v4 v5) in H || auto);
+    (* auto; *)
+    fail "Did you use copy-and-paste, from your check_example_map proof,
        into your example_map definition?  If so, very clever.
        Please try it again with an example_map definition that
        you make up from first principles.  Or, to skip that,
@@ -349,7 +365,22 @@ Theorem lookup_relate:
   forall k t cts ,
     Abs t cts -> lookup k t =  cts k.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction H.
+  - (* empty *)
+    constructor.
+  - (* not-empty *)
+    unfold t_update.
+    bdestruct (k0 =? k).
+    + simpl. bdestruct (k <? k0).
+      * omega.
+      * bdestruct (k0 <? k). omega. auto.
+    + unfold combine. bdestruct (k <? k0).
+      * simpl. bdestruct (k <? k0). auto.
+        bdestruct (k0 <? k). omega. omega.
+      * simpl. bdestruct (k <? k0). omega.
+        bdestruct (k0 <? k). auto. omega.
+Qed.
+
 (** [] *)
 
 (** **** 练习：4 星, standard (insert_relate)  *)
@@ -358,7 +389,42 @@ Theorem insert_relate:
     Abs t cts ->
     Abs (insert k v t) (t_update cts k v).
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction H.
+  -
+    simpl. evar (m: total_map V).
+    replace (t_update(t_empty default) k v) with m; subst m.
+    repeat constructor.
+    extensionality x. unfold t_update, combine, t_empty.
+    bdestruct (k =? x). auto.
+    bdestruct (x <? k). auto. auto.
+  -
+    simpl. bdestruct (k <? k0).
+    evar (m: total_map V).
+    replace (t_update (t_update (combine k0 a b) k0 v0) k v)with m; subst m.
+    repeat constructor. apply IHAbs1. apply H0.
+    extensionality x. unfold t_update, combine, t_empty.
+    bdestruct (k0 =? x). bdestruct (k =? x).
+    subst. omega. auto. bdestruct (x <? k0). bdestruct (k =? x).
+    auto. auto. bdestruct (k =? x). omega. auto.
+    bdestruct (k0 <? k).
+    evar (m: total_map V).
+    replace (t_update (t_update (combine k0 a b) k0 v0) k v) with m; subst m.
+    repeat constructor. apply H. apply IHAbs2.
+    extensionality x.
+    unfold t_update, combine, t_empty.
+    bdestruct (k0 =? x). bdestruct (k =? x).
+    omega. auto. bdestruct (x <? k0). bdestruct (k =? x). omega. auto.
+    bdestruct (k =? x). auto. auto.
+    evar (m: total_map V).
+    replace (t_update (t_update (combine k0 a b) k0 v0) k v) with m; subst m.
+    repeat constructor. apply H. apply H0.
+    extensionality x. unfold t_update, combine, t_empty.
+    bdestruct (k =? x). auto.
+    bdestruct (x <? k). bdestruct (k0 =? x). omega. bdestruct (x <? k0). auto. omega.
+    bdestruct (k0 =? x). omega. bdestruct (x <? k0). omega.
+    auto.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -402,16 +468,16 @@ Theorem not_elements_relate:
   forall v, v <> default ->
   ~ (forall t cts,  Abs t cts -> list2map (elements t) = cts).
 Proof.
-intros.
-intro.
-pose (bogus := T (T E 3 v E) 2 v E).
-pose (m := t_update (t_empty default) 2 v).
-pose (m' := t_update
-        (combine 2
-           (t_update (combine 3 (t_empty default) (t_empty default)) 3 v)
-           (t_empty default)) 2 v).
-assert (Paradox: list2map (elements bogus) = m /\ list2map (elements bogus) <> m).
-split.
+  intros.
+  intro.
+  pose (bogus := T (T E 3 v E) 2 v E).
+  pose (m := t_update (t_empty default) 2 v).
+  pose (m' := t_update
+                (combine 2
+                         (t_update (combine 3 (t_empty default) (t_empty default)) 3 v)
+                         (t_empty default)) 2 v).
+  assert (Paradox: list2map (elements bogus) = m /\ list2map (elements bogus) <> m).
+  split.
 (** To prove the first subgoal, prove that [m=m'] (by [extensionality]) and
       then use [H].
 
@@ -426,8 +492,21 @@ split.
       In all 3 goals, when you need to unfold local definitions such
       as [bogus] you can use [unfold bogus] or [subst bogus].  *)
 
+  - extensionality x.
+    simpl. unfold t_update, t_empty.
+    bdestruct (3 =? x). subst.
+    assert (Hdef : m 3 = default).
+    { unfold m. unfold t_update. simpl. unfold t_empty. auto. }
+    rewrite Hdef.
+    unfold not in H. admit.
+    bdestruct (2 =? x). subst. unfold m. unfold t_update, t_empty.
+    bdestruct (2 =? 2). auto. admit. unfold m. unfold t_update, t_empty.
+    bdestruct (2 =? x). omega. auto.
+  - intro. unfold bogus in H1. simpl in H1. admit.
+
+
 (* 请在此处解答 *) Admitted.
-(** [] *)
+ (** [] *)
 
 (** What went wrong?  Clearly, [elements_relate] is true; you just
     explained why.  And clearly, it's not true, because
@@ -466,19 +545,19 @@ Definition SearchTreeX (t: tree) :=
 Lemma example_SearchTree_good:
    forall v2 v4 v5, SearchTreeX (example_tree v2 v4 v5).
 Proof.
-intros.
-hnf. simpl.
-repeat split; auto.
+  intros.
+  hnf. simpl.
+  repeat split; auto.
 Qed.
 
 Lemma example_SearchTree_bad:
    forall v, ~SearchTreeX (T (T E 3 v E) 2 v E).
 Proof.
-intros.
-intro.
-hnf in H; simpl in H.
-do 3 destruct H.
-omega.
+  intros.
+  intro.
+  hnf in H; simpl in H.
+  do 3 destruct H.
+  omega.
 Qed.
 
 Theorem elements_relate_second_attempt:
@@ -509,7 +588,7 @@ Inductive SearchTree: tree -> Prop :=
 Lemma SearchTree'_le:
   forall lo t hi, @SearchTree' lo t hi -> lo <= hi.
 Proof.
-induction 1; omega.
+  induction 1; omega.
 Qed.
 
 (** Before we prove that [elements] is correct, let's consider a simpler version. *)
@@ -536,10 +615,20 @@ Fixpoint slow_elements (s: tree) : list (key * V) :=
 (** **** 练习：3 星, standard, optional (elements_slow_elements)  *)
 Theorem elements_slow_elements: elements = slow_elements.
 Proof.
-extensionality s.
-unfold elements.
-assert (forall base, elements' s base = slow_elements s ++ base).
-(* 请在此处解答 *) Admitted.
+  extensionality s.
+  unfold elements.
+  assert (forall base, elements' s base = slow_elements s ++ base).
+  { induction s. simpl. auto. simpl.
+    Search (_ ++ _ ++ _).
+    intro.
+    rewrite <- app_assoc.
+    Search (_ ++ _ = _ ++ _).
+    simpl. rewrite <- IHs2.
+    rewrite IHs1. reflexivity. }
+  rewrite H. Search (_ ++ [] = _).
+  apply app_nil_r.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard, optional (slow_elements_range)  *)
@@ -549,7 +638,10 @@ Lemma slow_elements_range:
   In (k,v) (slow_elements t) ->
   lo <= k < hi.
 Proof.
-(* 请在此处解答 *) Admitted.
+  induction t. intros. inv H0.
+  intros. specialize (IHt1 hi). specialize (IHt2 hi).
+  inv H. Admitted.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -559,18 +651,18 @@ Lemma In_decidable:
   forall (al: list (key*V)) (i: key),
   (exists v, In (i,v) al) \/ (~exists v, In (i,v) al).
 Proof.
-intros.
-induction al as [ | [k v]].
-right; intros [w H]; inv H.
-destruct IHal as [[w H] | H].
-left; exists w; right; auto.
-bdestruct (k =? i).
-subst k.
-left; eauto.
-exists v; left; auto.
-right. intros [w H1].
-destruct H1. inv H1. omega.
-apply H; eauto.
+  intros.
+  induction al as [ | [k v]].
+  right; intros [w H]; inv H.
+  destruct IHal as [[w H] | H].
+  left; exists w; right; auto.
+  bdestruct (k =? i).
+  subst k.
+  left; eauto.
+  exists v; left; auto.
+  right. intros [w H1].
+  destruct H1. inv H1. omega.
+  apply H; eauto.
 Qed.
 
 Lemma list2map_app_left:
@@ -630,27 +722,33 @@ Theorem elements_relate:
   Abs t cts ->
   list2map (elements t) = cts.
 Proof.
-rewrite elements_slow_elements.
-intros until 1. inv H.
-revert cts; induction H0; intros.
-* (* ST_E case *)
-inv H0.
-reflexivity.
-* (* ST_T case *)
-inv H.
-specialize (IHSearchTree'1 _ H5). clear H5.
-specialize (IHSearchTree'2 _ H6). clear H6.
-unfold slow_elements; fold slow_elements.
-subst.
-extensionality i.
-destruct (In_decidable (slow_elements l) i)  as [[w H] | Hleft].
-rewrite list2map_app_left with (v:=w); auto.
-pose proof (slow_elements_range _ _ _ _ _ H0_ H).
-unfold combine, t_update.
-bdestruct (k=?i); [ omega | ].
-bdestruct (i<?k); [ | omega].
-auto.
-(* 请在此处解答 *) Admitted.
+  rewrite elements_slow_elements.
+  intros until 1. inv H.
+  revert cts; induction H0; intros.
+  * (* ST_E case *)
+    inv H0.
+    reflexivity.
+  * (* ST_T case *)
+    inv H.
+    specialize (IHSearchTree'1 _ H5). clear H5.
+    specialize (IHSearchTree'2 _ H6). clear H6.
+    unfold slow_elements; fold slow_elements.
+    subst.
+    extensionality i.
+    destruct (In_decidable (slow_elements l) i)  as [[w H] | Hleft].
+    rewrite list2map_app_left with (v:=w); auto.
+    pose proof (slow_elements_range _ _ _ _ _ H0_ H).
+    unfold combine, t_update.
+    bdestruct (k=?i); [ omega | ].
+    bdestruct (i<?k); [ | omega].
+    auto.
+    rewrite list2map_app_right; auto.
+    simpl. unfold t_update, combine.
+    bdestruct (k =? i); [auto | ].
+    bdestruct (i <? k). 2 : auto.
+    unfold not in Hleft. destruct Hleft.
+    exists default. Admitted.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -666,10 +764,15 @@ auto.
 (** **** 练习：1 星, standard (empty_tree_SearchTree)  *)
 Theorem empty_tree_SearchTree:  SearchTree empty_tree.
 Proof.
-clear default.  (* This is here to avoid a nasty interaction between Admitted
+  clear default.  (* This is here to avoid a nasty interaction between Admitted
    and Section/Variable.  It's also a hint that the [default] value
    is not needed in this theorem. *)
-(* 请在此处解答 *) Admitted.
+  unfold empty_tree.
+  assert (H : SearchTree' 0 E 0).
+  constructor. auto.
+  apply ST_intro in H. auto.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (insert_SearchTree)  *)
@@ -677,8 +780,17 @@ Theorem insert_SearchTree:
   forall k v t,
    SearchTree t -> SearchTree (insert k v t).
 Proof.
-clear default. (* This is here to avoid a nasty interaction between Admitted and Section/Variable *)
-(* 请在此处解答 *) Admitted.
+  clear default. (* This is here to avoid a nasty interaction between Admitted and Section/Variable *)
+  (* intros. inv H. inv H0. simpl. *)
+
+  intros. induction t. simpl.
+  assert (H1 : SearchTree' 0 (T E k v E) (S k)).
+  { constructor. constructor. omega.
+  constructor. omega. }
+  apply ST_intro in H1. auto.
+  simpl. bdestruct (k <? k0).
+  Admitted.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -707,9 +819,9 @@ Lemma lookup_relate':
 (** That is certainly provable, since it's a weaker statement than what we proved: *)
 
 Proof.
-intros.
-apply lookup_relate.
-apply H0.
+  intros.
+  apply lookup_relate.
+  apply H0.
 Qed.
 
 Theorem insert_relate':
@@ -739,22 +851,23 @@ Remark abstraction_of_bogus_tree:
  forall v2 v3,
    Abs (T (T E 3 v3 E) 2 v2 E) (t_update (t_empty default) 2 v2).
 Proof.
-intros.
-evar (m: total_map V).
-replace  (t_update (t_empty default) 2 v2) with m; subst m.
-repeat constructor.
-extensionality x.
-unfold t_update, combine, t_empty.
-bdestruct (2 =? x).
-auto.
-bdestruct (x <? 2).
-bdestruct (3 =? x).
-(* LOOK HERE! *)
-omega.
-bdestruct (x <? 3).
-auto.
-auto.
-auto.
+  intros.
+  evar (m: total_map V).
+  replace  (t_update (t_empty default) 2 v2) with m; subst m.
+  repeat constructor.
+  Print combine.
+  extensionality x.
+  unfold t_update, combine, t_empty.
+  bdestruct (2 =? x).
+  auto.
+  bdestruct (x <? 2).
+  bdestruct (3 =? x).
+  (* LOOK HERE! *)
+  omega.
+  bdestruct (x <? 3).
+  auto.
+  auto.
+  auto.
 Qed.
 
 (** Step through the proof to [LOOK HERE], and notice what's going on.
@@ -789,7 +902,13 @@ Qed.
 Lemma can_relate:
  forall t,  SearchTree t -> exists cts, Abs t cts.
 Proof.
-(* 请在此处解答 *) Admitted.
+  intros. induction t.
+  exists (t_empty default). constructor.
+
+
+Admitted.
+
+
 (** [] *)
 
 (** Now, because we happen to have a super-strong abstraction relation, that
@@ -799,8 +918,10 @@ Proof.
 Lemma unrealistically_strong_can_relate:
  forall t,  exists cts, Abs t cts.
 Proof.
-(* 请在此处解答 *) Admitted.
-(** [] *)
+  intros. induction t.
+  exists (t_empty default). constructor.
+Admitted.
+  (** [] *)
 
 (* ################################################################# *)
 (** * It Wasn't Really Luck, Actually *)

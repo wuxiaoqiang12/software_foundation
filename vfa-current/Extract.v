@@ -281,7 +281,22 @@ Qed.
 Theorem lookup_relate:
   forall k t cts ,   Abs t cts -> lookup k t =  cts (int2Z k).
 Proof.  (* Copy your proof from SearchTree.v, and adapt it. *)
-(* 请在此处解答 *) Admitted.
+  intros. induction H.
+  - (* empty *)
+    constructor.
+  - (* not-empty *)
+    unfold t_update.
+    bdestruct (int2Z k0 =? int2Z k).
+    + simpl. bdestruct (ltb k k0).
+      * omega.
+      * bdestruct (ltb k0 k). omega. auto.
+    + unfold combine. bdestruct (int2Z k <? int2Z k0).
+      * simpl. bdestruct (ltb k k0). auto.
+        bdestruct (ltb k0 k). omega. omega.
+      * simpl. bdestruct (ltb k k0). omega.
+        bdestruct (ltb k0 k). auto. omega.
+Qed.
+
 (** [] *)
 
 (** **** 练习：3 星, standard (insert_relate)  *)
@@ -290,8 +305,43 @@ Theorem insert_relate:
     Abs t cts ->
     Abs (insert k v t) (t_update cts (int2Z k) v).
 Proof.  (* Copy your proof from SearchTree.v, and adapt it. *)
-(* 请在此处解答 *) Admitted.
-(** [] *)
+  intros. induction H.
+  -
+    simpl. evar (m: total_map V).
+    replace (t_update(t_empty default) (int2Z k) v) with m; subst m.
+    repeat constructor.
+    extensionality x. unfold t_update, combine, t_empty.
+    bdestruct (int2Z k =? x). auto.
+    bdestruct (x <? int2Z k). auto. auto.
+  -
+    simpl. bdestruct (ltb k k0).
+    evar (m: total_map V).
+    replace (t_update (t_update (combine (int2Z k0) a b) (int2Z k0) v0) (int2Z k) v)with m; subst m.
+    repeat constructor. apply IHAbs1. apply H0.
+    extensionality x. unfold t_update, combine, t_empty.
+    bdestruct (int2Z k0 =? x). bdestruct (int2Z k =? x).
+    subst. omega. auto. bdestruct (x <? int2Z k0). bdestruct (int2Z k =? x).
+    auto. auto. bdestruct (int2Z k =? x). omega. auto.
+    bdestruct (ltb k0 k).
+    evar (m: total_map V).
+    replace (t_update (t_update (combine (int2Z k0) a b) (int2Z k0) v0) (int2Z k) v) with m; subst m.
+    repeat constructor. apply H. apply IHAbs2.
+    extensionality x.
+    unfold t_update, combine, t_empty.
+    bdestruct (int2Z k0 =? x). bdestruct (int2Z k =? x).
+    omega. auto. bdestruct (x <? int2Z k0). bdestruct (int2Z k =? x). omega. auto.
+    bdestruct (int2Z k =? x). auto. auto.
+    evar (m: total_map V).
+    replace (t_update (t_update (combine (int2Z k0) a b) (int2Z k0) v0) (int2Z k) v) with m; subst m.
+    repeat constructor. apply H. apply H0.
+    extensionality x. unfold t_update, combine, t_empty.
+    bdestruct (int2Z k =? x). auto.
+    bdestruct (x <? int2Z k). bdestruct (int2Z k0 =? x). omega. bdestruct (x <? int2Z k0). auto. omega.
+    bdestruct (int2Z k0 =? x). omega. bdestruct (x <? int2Z k0). omega.
+    auto.
+Qed.
+
+  (** [] *)
 
 (** **** 练习：1 星, standard (unrealistically_strong_can_relate)  *)
 Lemma unrealistically_strong_can_relate:
