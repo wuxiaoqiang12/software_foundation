@@ -172,15 +172,37 @@ Lemma listrep_local_prop: forall il p, listrep il p |--
         !! (is_pointer_or_null p  /\ (p=nullval <-> il=nil)).
 (** See if you can remember how to prove this; or look again
   at [Verif_reverse] to see how it's done. *)
-(* FILL IN HERE *) Admitted.
-Hint Resolve listrep_local_prop : saturate_local.
+
+Proof.
+  intros.
+  revert p; induction il; intros p.
+  - unfold listrep.
+    entailer!. split; auto.
+  - unfold listrep; fold listrep.
+    entailer.
+    entailer!.
+    split; intro.
+    + subst p. eapply field_compatible_nullval; eauto.
+    + inversion H3.
+Qed.
+
+  Hint Resolve listrep_local_prop : saturate_local.
 
 Lemma listrep_valid_pointer:
   forall il p,
    listrep il p |-- valid_pointer p.
 (** See if you can remember how to prove this; or look again
   at [Verif_reverse] to see how it's done. *)
-(* FILL IN HERE *) Admitted.
+
+Proof.
+  intros.
+  unfold listrep.
+  destruct il; simpl.
+  * entailer!.
+  * entailer!.
+    auto with valid_pointer.
+Qed.
+
 Hint Resolve listrep_valid_pointer : valid_pointer.
 (** [] *)
 
@@ -211,13 +233,24 @@ Arguments stack il p : simpl never.
 (** **** Exercise: 1 star (stack_properties)  *)
 
 Lemma stack_local_prop: forall il p, stack il p |--  !! (isptr p).
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  unfold stack. entailer.
+  entailer!.
+Qed.
+
 Hint Resolve stack_local_prop : saturate_local.
 
 Lemma stack_valid_pointer:
   forall il p,
    stack il p |-- valid_pointer p.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  unfold stack.
+  entailer!.
+  auto with valid_pointer.
+Qed.
+
 Hint Resolve stack_valid_pointer : valid_pointer.
 (** [] *)
 
@@ -265,22 +298,30 @@ Definition Gprog : funspecs :=
 (** **** Exercise: 2 stars (body_pop)  *)
 Lemma body_pop: semax_body Vprog Gprog f_pop pop_spec.
 Proof.
-start_function.
-(* FILL IN HERE *) Admitted.
+  start_function.
+  Print Vprog.
+  Print offset_val.
+  Print field_address.
+  (* assert_PROP (offset_val 0 p = field_address  ). *)
+  Admitted.
+
+
 (** [] *)
 
 (** **** Exercise: 2 stars (body_push)  *)
 Lemma body_push: semax_body Vprog Gprog f_push push_spec.
 Proof.
 start_function.
-forward_call (Tstruct _cons noattr).
-simpl; split3; auto.
+(* forward_call (Tstruct _cons noattr). *)
+(* simpl; split3; auto. *)
 (* FILL IN HERE *) Admitted.
 (** [] *)
 
 (** **** Exercise: 2 stars (body_newstack)  *)
 Lemma body_newstack: semax_body Vprog Gprog f_newstack newstack_spec.
 Proof.
-start_function.
+  start_function.
+  hint.
+  
 (* FILL IN HERE *) Admitted.
 (** [] *)
